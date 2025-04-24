@@ -142,7 +142,7 @@
             // 
             // Driver
             // 
-            this.ClientSize = new System.Drawing.Size(756, 485);
+            this.ClientSize = new System.Drawing.Size(752, 460);
             this.Controls.Add(this.dgvDriver);
             this.Controls.Add(this.btnRefresh);
             this.Controls.Add(this.btnUbah);
@@ -155,6 +155,7 @@
             this.Controls.Add(this.lblNoTel);
             this.Controls.Add(this.lblNamaDriver);
             this.Name = "Driver";
+            this.Text = "Driver";
             this.Load += new System.EventHandler(this.Driver_Load_1);
             ((System.ComponentModel.ISupportInitialize)(this.dgvDriver)).EndInit();
             this.ResumeLayout(false);

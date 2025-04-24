@@ -44,9 +44,16 @@ namespace BiroWisataForm
             pembayaranForm.Show();
         }
 
-        private void MenuAdmin_Load(object sender, EventArgs e)
+        private void btnPemesanan_Click(object sender, EventArgs e)
         {
+            Pemesanan pemesananForm = new Pemesanan();
+            pemesananForm.Show();
+        }
 
+        private void btnOperasional_Click(object sender, EventArgs e)
+        {
+            Operasional operasionalForm = new Operasional();
+            operasionalForm.Show();
         }
     }
 }

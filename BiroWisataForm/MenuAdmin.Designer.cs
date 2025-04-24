@@ -75,6 +75,7 @@
             this.btnPemesanan.TabIndex = 3;
             this.btnPemesanan.Text = "Pemesanan";
             this.btnPemesanan.UseVisualStyleBackColor = true;
+            this.btnPemesanan.Click += new System.EventHandler(this.btnPemesanan_Click);
             // 
             // btnPaketWisata
             // 
@@ -104,6 +105,7 @@
             this.btnOperasional.TabIndex = 6;
             this.btnOperasional.Text = "Operasional";
             this.btnOperasional.UseVisualStyleBackColor = true;
+            this.btnOperasional.Click += new System.EventHandler(this.btnOperasional_Click);
             // 
             // MenuAdmin
             // 
@@ -119,7 +121,6 @@
             this.Controls.Add(this.btnPelanggan);
             this.Name = "MenuAdmin";
             this.Text = "MenuAdmin";
-            this.Load += new System.EventHandler(this.MenuAdmin_Load);
             this.Click += new System.EventHandler(this.button5_Click);
             this.ResumeLayout(false);
 

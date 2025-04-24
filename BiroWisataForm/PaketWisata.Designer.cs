@@ -20,9 +20,7 @@
         private System.Windows.Forms.TextBox txtHarga;
         private System.Windows.Forms.TextBox txtDurasi;
         private System.Windows.Forms.TextBox txtFasilitas;
-        private System.Windows.Forms.TextBox txtKategori;
         private System.Windows.Forms.TextBox txtKuota;
-        private System.Windows.Forms.TextBox txtJadwal;
         private System.Windows.Forms.Button btnTambah;
         private System.Windows.Forms.Button btnHapus;
         private System.Windows.Forms.Button btnUbah;
@@ -30,6 +28,7 @@
         private System.Windows.Forms.DataGridView dgvPaketWisata;
         private System.Windows.Forms.ComboBox cmbDriver;
         private System.Windows.Forms.ComboBox cmbKendaraan;
+
 
         /// <summary>
         /// Clean up any resources being used.
@@ -61,9 +60,7 @@
             this.txtHarga = new System.Windows.Forms.TextBox();
             this.txtDurasi = new System.Windows.Forms.TextBox();
             this.txtFasilitas = new System.Windows.Forms.TextBox();
-            this.txtKategori = new System.Windows.Forms.TextBox();
             this.txtKuota = new System.Windows.Forms.TextBox();
-            this.txtJadwal = new System.Windows.Forms.TextBox();
             this.btnTambah = new System.Windows.Forms.Button();
             this.btnHapus = new System.Windows.Forms.Button();
             this.btnUbah = new System.Windows.Forms.Button();
@@ -71,6 +68,8 @@
             this.dgvPaketWisata = new System.Windows.Forms.DataGridView();
             this.cmbDriver = new System.Windows.Forms.ComboBox();
             this.cmbKendaraan = new System.Windows.Forms.ComboBox();
+            this.dateTimePicker1 = new System.Windows.Forms.DateTimePicker();
+            this.comboBoxKategori = new System.Windows.Forms.ComboBox();
             ((System.ComponentModel.ISupportInitialize)(this.dgvPaketWisata)).BeginInit();
             this.SuspendLayout();
             // 
@@ -181,26 +180,12 @@
             this.txtFasilitas.Size = new System.Drawing.Size(448, 26);
             this.txtFasilitas.TabIndex = 12;
             // 
-            // txtKategori
-            // 
-            this.txtKategori.Location = new System.Drawing.Point(246, 215);
-            this.txtKategori.Name = "txtKategori";
-            this.txtKategori.Size = new System.Drawing.Size(448, 26);
-            this.txtKategori.TabIndex = 13;
-            // 
             // txtKuota
             // 
             this.txtKuota.Location = new System.Drawing.Point(246, 246);
             this.txtKuota.Name = "txtKuota";
             this.txtKuota.Size = new System.Drawing.Size(448, 26);
             this.txtKuota.TabIndex = 14;
-            // 
-            // txtJadwal
-            // 
-            this.txtJadwal.Location = new System.Drawing.Point(246, 278);
-            this.txtJadwal.Name = "txtJadwal";
-            this.txtJadwal.Size = new System.Drawing.Size(448, 26);
-            this.txtJadwal.TabIndex = 15;
             // 
             // btnTambah
             // 
@@ -266,11 +251,28 @@
             this.cmbKendaraan.Size = new System.Drawing.Size(200, 28);
             this.cmbKendaraan.TabIndex = 22;
             // 
+            // dateTimePicker1
+            // 
+            this.dateTimePicker1.Location = new System.Drawing.Point(246, 277);
+            this.dateTimePicker1.Name = "dateTimePicker1";
+            this.dateTimePicker1.Size = new System.Drawing.Size(448, 26);
+            this.dateTimePicker1.TabIndex = 23;
+            // 
+            // comboBoxKategori
+            // 
+            this.comboBoxKategori.FormattingEnabled = true;
+            this.comboBoxKategori.Location = new System.Drawing.Point(246, 214);
+            this.comboBoxKategori.Name = "comboBoxKategori";
+            this.comboBoxKategori.Size = new System.Drawing.Size(448, 28);
+            this.comboBoxKategori.TabIndex = 24;
+            // 
             // PaketWisata
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(9F, 20F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(984, 681);
+            this.Controls.Add(this.comboBoxKategori);
+            this.Controls.Add(this.dateTimePicker1);
             this.Controls.Add(this.label1);
             this.Controls.Add(this.label2);
             this.Controls.Add(this.label3);
@@ -284,9 +286,7 @@
             this.Controls.Add(this.txtHarga);
             this.Controls.Add(this.txtDurasi);
             this.Controls.Add(this.txtFasilitas);
-            this.Controls.Add(this.txtKategori);
             this.Controls.Add(this.txtKuota);
-            this.Controls.Add(this.txtJadwal);
             this.Controls.Add(this.btnTambah);
             this.Controls.Add(this.btnHapus);
             this.Controls.Add(this.btnUbah);
@@ -304,5 +304,8 @@
         }
 
         #endregion
+
+        private System.Windows.Forms.DateTimePicker dateTimePicker1;
+        private System.Windows.Forms.ComboBox comboBoxKategori;
     }
 }

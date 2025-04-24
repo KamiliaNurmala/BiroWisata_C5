@@ -28,8 +28,7 @@
         /// </summary>
         private void InitializeComponent()
         {
-            this.dgvPembayaran = new System.Windows.Forms.DataGridView();
-            this.txtJenisPengeluaran = new System.Windows.Forms.TextBox();
+            this.dgvOperasional = new System.Windows.Forms.DataGridView();
             this.txtBiaya = new System.Windows.Forms.TextBox();
             this.lblJenisPengeluaran = new System.Windows.Forms.Label();
             this.lblBiayaBBM = new System.Windows.Forms.Label();
@@ -37,25 +36,22 @@
             this.btnUbah = new System.Windows.Forms.Button();
             this.btnHapus = new System.Windows.Forms.Button();
             this.btnTambah = new System.Windows.Forms.Button();
-            ((System.ComponentModel.ISupportInitialize)(this.dgvPembayaran)).BeginInit();
+            this.cmbPaket = new System.Windows.Forms.ComboBox();
+            this.cmbDriver = new System.Windows.Forms.ComboBox();
+            this.cmbKendaraan = new System.Windows.Forms.ComboBox();
+            this.cmbJenisPengeluaran = new System.Windows.Forms.ComboBox();
+            ((System.ComponentModel.ISupportInitialize)(this.dgvOperasional)).BeginInit();
             this.SuspendLayout();
             // 
-            // dgvPembayaran
+            // dgvOperasional
             // 
-            this.dgvPembayaran.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
-            this.dgvPembayaran.Location = new System.Drawing.Point(31, 211);
-            this.dgvPembayaran.Name = "dgvPembayaran";
-            this.dgvPembayaran.RowHeadersWidth = 62;
-            this.dgvPembayaran.RowTemplate.Height = 28;
-            this.dgvPembayaran.Size = new System.Drawing.Size(768, 255);
-            this.dgvPembayaran.TabIndex = 23;
-            // 
-            // txtJenisPengeluaran
-            // 
-            this.txtJenisPengeluaran.Location = new System.Drawing.Point(239, 104);
-            this.txtJenisPengeluaran.Name = "txtJenisPengeluaran";
-            this.txtJenisPengeluaran.Size = new System.Drawing.Size(454, 26);
-            this.txtJenisPengeluaran.TabIndex = 22;
+            this.dgvOperasional.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
+            this.dgvOperasional.Location = new System.Drawing.Point(31, 211);
+            this.dgvOperasional.Name = "dgvOperasional";
+            this.dgvOperasional.RowHeadersWidth = 62;
+            this.dgvOperasional.RowTemplate.Height = 28;
+            this.dgvOperasional.Size = new System.Drawing.Size(768, 255);
+            this.dgvOperasional.TabIndex = 23;
             // 
             // txtBiaya
             // 
@@ -78,9 +74,9 @@
             this.lblBiayaBBM.AutoSize = true;
             this.lblBiayaBBM.Location = new System.Drawing.Point(69, 55);
             this.lblBiayaBBM.Name = "lblBiayaBBM";
-            this.lblBiayaBBM.Size = new System.Drawing.Size(99, 20);
+            this.lblBiayaBBM.Size = new System.Drawing.Size(64, 20);
             this.lblBiayaBBM.TabIndex = 18;
-            this.lblBiayaBBM.Text = "Biaya BBM : ";
+            this.lblBiayaBBM.Text = "Biaya  : ";
             // 
             // btnRefresh
             // 
@@ -118,13 +114,49 @@
             this.btnTambah.Text = "Tambah";
             this.btnTambah.UseVisualStyleBackColor = true;
             // 
+            // cmbPaket
+            // 
+            this.cmbPaket.FormattingEnabled = true;
+            this.cmbPaket.Location = new System.Drawing.Point(56, 487);
+            this.cmbPaket.Name = "cmbPaket";
+            this.cmbPaket.Size = new System.Drawing.Size(121, 28);
+            this.cmbPaket.TabIndex = 24;
+            // 
+            // cmbDriver
+            // 
+            this.cmbDriver.FormattingEnabled = true;
+            this.cmbDriver.Location = new System.Drawing.Point(239, 487);
+            this.cmbDriver.Name = "cmbDriver";
+            this.cmbDriver.Size = new System.Drawing.Size(121, 28);
+            this.cmbDriver.TabIndex = 25;
+            // 
+            // cmbKendaraan
+            // 
+            this.cmbKendaraan.FormattingEnabled = true;
+            this.cmbKendaraan.Location = new System.Drawing.Point(411, 487);
+            this.cmbKendaraan.Name = "cmbKendaraan";
+            this.cmbKendaraan.Size = new System.Drawing.Size(121, 28);
+            this.cmbKendaraan.TabIndex = 26;
+            // 
+            // cmbJenisPengeluaran
+            // 
+            this.cmbJenisPengeluaran.FormattingEnabled = true;
+            this.cmbJenisPengeluaran.Location = new System.Drawing.Point(239, 101);
+            this.cmbJenisPengeluaran.Name = "cmbJenisPengeluaran";
+            this.cmbJenisPengeluaran.Size = new System.Drawing.Size(454, 28);
+            this.cmbJenisPengeluaran.TabIndex = 27;
+            this.cmbJenisPengeluaran.SelectedIndexChanged += new System.EventHandler(this.cmbJenisPengeluaran_SelectedIndexChanged);
+            // 
             // Operasional
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(9F, 20F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(834, 534);
-            this.Controls.Add(this.dgvPembayaran);
-            this.Controls.Add(this.txtJenisPengeluaran);
+            this.Controls.Add(this.cmbJenisPengeluaran);
+            this.Controls.Add(this.cmbKendaraan);
+            this.Controls.Add(this.cmbDriver);
+            this.Controls.Add(this.cmbPaket);
+            this.Controls.Add(this.dgvOperasional);
             this.Controls.Add(this.txtBiaya);
             this.Controls.Add(this.lblJenisPengeluaran);
             this.Controls.Add(this.lblBiayaBBM);
@@ -134,7 +166,8 @@
             this.Controls.Add(this.btnTambah);
             this.Name = "Operasional";
             this.Text = "Operasional";
-            ((System.ComponentModel.ISupportInitialize)(this.dgvPembayaran)).EndInit();
+            this.Load += new System.EventHandler(this.Operasional_Load);
+            ((System.ComponentModel.ISupportInitialize)(this.dgvOperasional)).EndInit();
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -142,8 +175,7 @@
 
         #endregion
 
-        private System.Windows.Forms.DataGridView dgvPembayaran;
-        private System.Windows.Forms.TextBox txtJenisPengeluaran;
+        private System.Windows.Forms.DataGridView dgvOperasional;
         private System.Windows.Forms.TextBox txtBiaya;
         private System.Windows.Forms.Label lblJenisPengeluaran;
         private System.Windows.Forms.Label lblBiayaBBM;
@@ -151,5 +183,9 @@
         private System.Windows.Forms.Button btnUbah;
         private System.Windows.Forms.Button btnHapus;
         private System.Windows.Forms.Button btnTambah;
+        private System.Windows.Forms.ComboBox cmbPaket;
+        private System.Windows.Forms.ComboBox cmbDriver;
+        private System.Windows.Forms.ComboBox cmbKendaraan;
+        private System.Windows.Forms.ComboBox cmbJenisPengeluaran;
     }
 }
