@@ -35,6 +35,7 @@
             this.btnPaketWisata = new System.Windows.Forms.Button();
             this.btnPembayaran = new System.Windows.Forms.Button();
             this.btnOperasional = new System.Windows.Forms.Button();
+            this.btnLogOut = new System.Windows.Forms.Button();
             this.SuspendLayout();
             // 
             // btnPelanggan
@@ -107,11 +108,22 @@
             this.btnOperasional.UseVisualStyleBackColor = true;
             this.btnOperasional.Click += new System.EventHandler(this.btnOperasional_Click);
             // 
+            // btnLogOut
+            // 
+            this.btnLogOut.Location = new System.Drawing.Point(297, 324);
+            this.btnLogOut.Name = "btnLogOut";
+            this.btnLogOut.Size = new System.Drawing.Size(146, 43);
+            this.btnLogOut.TabIndex = 7;
+            this.btnLogOut.Text = "Log Out";
+            this.btnLogOut.UseVisualStyleBackColor = true;
+            this.btnLogOut.Click += new System.EventHandler(this.btnLogout_Click);
+            // 
             // MenuAdmin
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(9F, 20F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(800, 450);
+            this.Controls.Add(this.btnLogOut);
             this.Controls.Add(this.btnOperasional);
             this.Controls.Add(this.btnPembayaran);
             this.Controls.Add(this.btnPaketWisata);
@@ -136,5 +148,6 @@
         private System.Windows.Forms.Button btnPaketWisata;
         private System.Windows.Forms.Button btnPembayaran;
         private System.Windows.Forms.Button btnOperasional;
+        private System.Windows.Forms.Button btnLogOut;
     }
 }

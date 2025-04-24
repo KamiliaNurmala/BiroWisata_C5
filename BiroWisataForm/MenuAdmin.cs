@@ -55,5 +55,22 @@ namespace BiroWisataForm
             Operasional operasionalForm = new Operasional();
             operasionalForm.Show();
         }
+
+        private void btnLogout_Click(object sender, EventArgs e)
+        {
+            // Show confirmation dialog
+            DialogResult result = MessageBox.Show("Apakah Anda yakin ingin keluar?",
+                "Konfirmasi Logout", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+
+            if (result == DialogResult.Yes)
+            {
+                // Show the login form
+                Form1 loginForm = new Form1();
+                loginForm.Show();
+
+                // Close the current form (MenuAdmin)
+                this.Close();
+            }
+        }
     }
 }
