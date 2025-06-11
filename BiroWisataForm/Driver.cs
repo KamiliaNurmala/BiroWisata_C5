@@ -13,11 +13,69 @@ namespace BiroWisataForm
             @"Data Source=KAMILIA\KAMILIANURMALA;Initial Catalog=BiroWisata;Integrated Security=True;";
         private int selectedDriverId = -1; // Untuk menyimpan ID driver terpilih
 
+        // Add status tracking for the driver
+        private enum DriverStatus
+        {
+            Aktif,
+            TidakAktif
+        }
+
+        // Add a status field to the form
+        //private ComboBox cmbStatus;
+
         public Driver()
         {
             InitializeComponent();
-            InitializeDataGridView(); // Panggil inisialisasi grid DULU
-            // Jangan panggil RefreshData di sini, biarkan Load event
+            ApplyCustomButtonStyles();
+            InitializeDataGridView();
+            InitializeSearchBox();
+            InitializeStatusComboBox(); // Tambahkan ini untuk mengisi ComboBox Status
+        }
+
+        private void ApplyCustomButtonStyles()
+        {
+            // Call the StyleButton method for each button
+            StyleButton(this.btnTambah, Color.FromArgb(46, 204, 113), Color.White);
+            StyleButton(this.btnUbah, Color.FromArgb(52, 152, 219), Color.White);
+            StyleButton(this.btnHapus, Color.FromArgb(231, 76, 60), Color.White);
+            StyleButton(this.btnRefresh, Color.FromArgb(149, 165, 166), Color.White);
+        }
+
+        private void InitializeStatusComboBox()
+        {
+            // Cari kontrol ComboBox dengan nama "cmbStatus" di form
+            var foundControls = this.Controls.Find("cmbStatus", true);
+            if (foundControls.Length > 0 && foundControls[0] is ComboBox)
+            {
+                // Jika ditemukan, hubungkan ke variabel cmbStatus kita
+                this.cmbStatus = (ComboBox)foundControls[0];
+
+                // Sekarang aman untuk menggunakannya
+                this.cmbStatus.Items.Clear();
+                this.cmbStatus.Items.Add("Aktif");
+                this.cmbStatus.Items.Add("Tidak Aktif");
+                this.cmbStatus.DropDownStyle = ComboBoxStyle.DropDownList;
+                if(this.cmbStatus.Items.Count > 0) this.cmbStatus.SelectedIndex = 0;
+            }
+            else
+            {
+                // Opsional: Beri peringatan jika ComboBox tidak ditemukan
+                MessageBox.Show("Kontrol 'cmbStatus' tidak ditemukan di form designer.", "Peringatan UI", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            }
+        }
+
+        // Helper method for styling buttons - Stays in Driver.cs
+        private void StyleButton(Button btn, Color backColor, Color foreColor)
+        {
+            btn.FlatStyle = FlatStyle.Flat;
+            btn.FlatAppearance.BorderSize = 0;
+            btn.BackColor = backColor;
+            btn.ForeColor = foreColor;
+            // You might want to match the font from your other forms if it's bold:
+            btn.Font = new Font("Segoe UI", 9F, FontStyle.Bold); // Or FontStyle.Regular
+            btn.Size = new Size(120, 40);
+            btn.Cursor = Cursors.Hand;
+            btn.UseVisualStyleBackColor = false; // Crucial for custom BackColor with FlatStyle.Flat
         }
 
         // --- Ganti Nama Method agar Cocok dengan Designer ---
@@ -29,21 +87,21 @@ namespace BiroWisataForm
         // --- Perbaiki Inisialisasi DataGridView ---
         private void InitializeDataGridView()
         {
-            dgvDriver.AutoGenerateColumns = false; // Set ke false untuk kolom manual
+            dgvDriver.AutoGenerateColumns = false;
             dgvDriver.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
             dgvDriver.MultiSelect = false;
             dgvDriver.ReadOnly = true;
             dgvDriver.AllowUserToAddRows = false;
-            dgvDriver.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill; // Atau AllCells
-            dgvDriver.CellClick += DgvDriver_CellClick; // Gunakan CellClick
+            dgvDriver.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
+            dgvDriver.CellClick += DgvDriver_CellClick;
 
             // Definisikan Kolom Secara Manual
             dgvDriver.Columns.Add(new DataGridViewTextBoxColumn
             {
                 Name = "IDDriver",
                 HeaderText = "ID",
-                DataPropertyName = "IDDriver", // Cocokkan dengan nama kolom dari SELECT
-                Visible = false // Sembunyikan ID jika tak perlu
+                DataPropertyName = "IDDriver",
+                Visible = false
             });
             dgvDriver.Columns.Add(new DataGridViewTextBoxColumn
             {
@@ -63,42 +121,54 @@ namespace BiroWisataForm
                 HeaderText = "No. SIM",
                 DataPropertyName = "NoSIM"
             });
-
-            // Hapus pengaturan Anchor, Location, Size dari sini
-            // Biarkan Designer.cs yang mengatur layout awal
-            // dgvDriver.Anchor = AnchorStyles.Top | AnchorStyles.Bottom |
-            //        AnchorStyles.Left | AnchorStyles.Right;
-            // dgvDriver.Location = new Point(10, 150);
-            // dgvDriver.Size = new Size(this.ClientSize.Width - 20,
-            //                         this.ClientSize.Height - 160);
+            // ***** THIS IS THE LINE THAT NEEDS TO BE ACTUAL CODE *****
+            dgvDriver.Columns.Add(new DataGridViewTextBoxColumn
+            {
+                Name = "Status",             // The programmatic name for the DGV column
+                HeaderText = "Status",          // The text displayed in the column header
+                DataPropertyName = "Status"     // Links to the "Status" column in your DataTable
+            });
+            // ***** END OF CRUCIAL LINE *****
         }
 
-        private void RefreshData()
+        private void RefreshData(string searchTerm = null)
         {
             using (SqlConnection conn = new SqlConnection(connectionString))
             {
                 try
                 {
                     conn.Open();
-                    // Ambil Status juga jika perlu ditampilkan atau difilter
-                    string query = "SELECT IDDriver, NamaDriver, NoTelp, NoSIM FROM Driver";
-                    SqlDataAdapter adapter = new SqlDataAdapter(query, conn);
-                    DataTable dataTable = new DataTable();
-                    adapter.Fill(dataTable);
+                    // Query dasar untuk mengambil driver yang tidak dihapus
+                    string query = "SELECT IDDriver, NamaDriver, NoTelp, NoSIM, Status FROM Driver WHERE IsDeleted = 0";
 
-                    dgvDriver.DataSource = null;
-                    dgvDriver.DataSource = dataTable;
+                    // Tambahkan kondisi pencarian jika ada
+                    if (!string.IsNullOrWhiteSpace(searchTerm))
+                    {
+                        query += " AND (NamaDriver LIKE @SearchTerm OR NoTelp LIKE @SearchTerm OR NoSIM LIKE @SearchTerm OR Status LIKE @SearchTerm)";
+                    }
 
-                    // Pengaturan header sudah dilakukan di InitializeDataGridView saat AutoGenerateColumns=false
-                    // if (dgvDriver.Columns.Count > 0 && dgvDriver.Columns.Contains("IDDriver")) ... (tidak perlu lagi)
+                    using (SqlCommand cmd = new SqlCommand(query, conn))
+                    {
+                        // Tambahkan parameter hanya jika diperlukan
+                        if (!string.IsNullOrWhiteSpace(searchTerm))
+                        {
+                            cmd.Parameters.AddWithValue("@SearchTerm", $"%{searchTerm}%");
+                        }
 
+                        SqlDataAdapter adapter = new SqlDataAdapter(cmd);
+                        DataTable dataTable = new DataTable();
+                        adapter.Fill(dataTable);
+
+                        dgvDriver.DataSource = null;
+                        dgvDriver.DataSource = dataTable;
+                    }
                 }
-                catch (SqlException ex) // Lebih spesifik tangkap SqlException
+                catch (SqlException ex)
                 {
                     MessageBox.Show($"Error Database: {ex.Message}", "Database Error",
                         MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
-                catch (Exception ex) // Tangkap error umum lainnya
+                catch (Exception ex)
                 {
                     MessageBox.Show($"Error: {ex.Message}", "General Error",
                         MessageBoxButtons.OK, MessageBoxIcon.Error);
@@ -107,45 +177,35 @@ namespace BiroWisataForm
             ClearFields(); // Bersihkan input setelah refresh
         }
 
-        private void btnTambah_Click(object sender, EventArgs e)
+        private void BtnTambah_Click(object sender, EventArgs e)
         {
-            if (!ValidateInputFields()) return; // Panggil validasi
+            if (!ValidateInputFields()) return;
 
             using (SqlConnection conn = new SqlConnection(connectionString))
             {
                 try
                 {
                     conn.Open();
-                    // Tambahkan Status jika ada di tabel dan form Anda
-                    string query = @"INSERT INTO Driver (NamaDriver, NoTelp, NoSIM)
-                                   VALUES (@NamaDriver, @NoTelp, @NoSIM)";
-                    using (SqlCommand cmd = new SqlCommand(query, conn))
+                    using (SqlCommand cmd = new SqlCommand("sp_AddDriver", conn))
                     {
+                        cmd.CommandType = CommandType.StoredProcedure;
                         cmd.Parameters.AddWithValue("@NamaDriver", txtNama.Text.Trim());
                         cmd.Parameters.AddWithValue("@NoTelp", txtNoTel.Text.Trim());
                         cmd.Parameters.AddWithValue("@NoSIM", txtNoSim.Text.Trim());
-                        // cmd.Parameters.AddWithValue("@Status", cmbStatus.SelectedItem.ToString()); // Jika ada ComboBox Status
+                        cmd.Parameters.AddWithValue("@CreatedBy", Environment.UserName);
 
-                        int result = cmd.ExecuteNonQuery();
-                        if (result > 0)
-                        {
-                            MessageBox.Show("Data driver berhasil ditambahkan!", "Sukses",
-                                MessageBoxButtons.OK, MessageBoxIcon.Information);
-                            RefreshData(); // Refresh data & clear fields
-                        }
-                        else
-                        {
-                            MessageBox.Show("Gagal menambahkan data.", "Gagal",
-                               MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                        }
+                        cmd.ExecuteNonQuery(); // Execute the SP
+
+                        // If no exception, assume success
+                        MessageBox.Show("Data driver berhasil ditambahkan!", "Sukses",
+                            MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        RefreshData();
                     }
                 }
                 catch (SqlException ex)
                 {
                     MessageBox.Show($"Error Database: {ex.Message}\nNomor: {ex.Number}", "Database Error",
                        MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    // Tambahkan penanganan error spesifik jika perlu (misal UNIQUE constraint)
-                    // if (ex.Number == 2627) { // Unique key violation }
                 }
                 catch (Exception ex)
                 {
@@ -156,9 +216,9 @@ namespace BiroWisataForm
         }
 
         // --- Sederhanakan Hapus (Tanpa Reseed) ---
-        private void btnHapus_Click(object sender, EventArgs e)
+        private void BtnHapus_Click(object sender, EventArgs e)
         {
-            if (selectedDriverId < 0) // Gunakan ID terpilih
+            if (selectedDriverId < 0)
             {
                 MessageBox.Show("Pilih baris driver yang ingin dihapus!", "Peringatan",
                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
@@ -173,30 +233,25 @@ namespace BiroWisataForm
                     try
                     {
                         conn.Open();
-                        string deleteQuery = "DELETE FROM Driver WHERE IDDriver = @IDDriver";
-                        using (SqlCommand cmdDelete = new SqlCommand(deleteQuery, conn))
+                        using (SqlCommand cmdDelete = new SqlCommand("sp_DeleteDriver", conn))
                         {
+                            cmdDelete.CommandType = CommandType.StoredProcedure;
                             cmdDelete.Parameters.AddWithValue("@IDDriver", selectedDriverId);
-                            int result = cmdDelete.ExecuteNonQuery();
+                            cmdDelete.Parameters.AddWithValue("@UpdatedBy", Environment.UserName); // Assuming your SP takes this
 
-                            if (result > 0)
-                            {
-                                MessageBox.Show("Data driver berhasil dihapus!", "Sukses",
-                                    MessageBoxButtons.OK, MessageBoxIcon.Information);
-                                RefreshData(); // Refresh data & clear fields
-                            }
-                            else
-                            {
-                                MessageBox.Show("Gagal menghapus data (mungkin sudah dihapus).", "Gagal",
-                                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                            }
+                            cmdDelete.ExecuteNonQuery(); // Execute the SP
+
+                            // If no exception was thrown by the SP, assume success
+                            MessageBox.Show("Data driver berhasil dihapus!", "Sukses",
+                                MessageBoxButtons.OK, MessageBoxIcon.Information);
+                            RefreshData(); // Refresh data & clear fields
                         }
                     }
-                    catch (SqlException ex) // Tangani potensi error FK jika Driver dirujuk tabel lain
+                    catch (SqlException ex)
                     {
                         if (ex.Number == 547) // Foreign Key constraint violation
                         {
-                            MessageBox.Show($"Error: Tidak dapat menghapus driver ini karena masih dirujuk oleh data lain (misalnya Paket Wisata atau Operasional).\nDetail: {ex.Message}", "Error Relasi Database", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                            MessageBox.Show($"Error: Tidak dapat menghapus driver ini karena masih terhubung dengan data lain (misalnya Paket Wisata atau Operasional).\nDetail: {ex.Message}", "Error Relasi Database", MessageBoxButtons.OK, MessageBoxIcon.Error);
                         }
                         else
                         {
@@ -212,54 +267,45 @@ namespace BiroWisataForm
             }
         }
 
-        private void btnUbah_Click(object sender, EventArgs e)
+        private void BtnUbah_Click(object sender, EventArgs e)
         {
-            if (selectedDriverId < 0) // Gunakan ID terpilih
+            if (selectedDriverId < 0)
             {
                 MessageBox.Show("Pilih baris driver yang ingin diubah!", "Peringatan",
-                   MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
 
-            if (!ValidateInputFields()) return; // Panggil validasi
+            if (!ValidateInputFields()) return;
 
             using (SqlConnection conn = new SqlConnection(connectionString))
             {
                 try
                 {
                     conn.Open();
-                    // Tambahkan SET Status = @Status jika perlu
-                    string query = @"UPDATE Driver
-                                   SET NamaDriver = @Nama,
-                                       NoTelp = @NoTelp,
-                                       NoSIM = @NoSIM
-                                   WHERE IDDriver = @Id";
-                    using (SqlCommand cmd = new SqlCommand(query, conn))
+                    using (SqlCommand cmd = new SqlCommand("sp_UpdateDriver", conn))
                     {
-                        cmd.Parameters.AddWithValue("@Id", selectedDriverId); // ID dari baris terpilih
-                        cmd.Parameters.AddWithValue("@Nama", txtNama.Text.Trim());
+                        cmd.CommandType = CommandType.StoredProcedure;
+
+                        cmd.Parameters.AddWithValue("@IDDriver", selectedDriverId);
+                        cmd.Parameters.AddWithValue("@NamaDriver", txtNama.Text.Trim());
                         cmd.Parameters.AddWithValue("@NoTelp", txtNoTel.Text.Trim());
                         cmd.Parameters.AddWithValue("@NoSIM", txtNoSim.Text.Trim());
-                        // cmd.Parameters.AddWithValue("@Status", cmbStatus.SelectedItem.ToString()); // Jika ada
+                        cmd.Parameters.AddWithValue("@Status", cmbStatus.SelectedItem.ToString());
+                        cmd.Parameters.AddWithValue("@UpdatedBy", Environment.UserName);
 
-                        int result = cmd.ExecuteNonQuery();
-                        if (result > 0)
-                        {
-                            MessageBox.Show("Data driver berhasil diubah!", "Sukses",
-                                MessageBoxButtons.OK, MessageBoxIcon.Information);
-                            RefreshData(); // Refresh data & clear fields
-                        }
-                        else
-                        {
-                            MessageBox.Show("Data tidak berubah atau tidak ditemukan.", "Informasi",
-                                MessageBoxButtons.OK, MessageBoxIcon.Information);
-                        }
+                        cmd.ExecuteNonQuery(); // Execute the SP
+
+                        // If no exception, assume success
+                        MessageBox.Show("Data driver berhasil diubah!", "Sukses",
+                            MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        RefreshData();
                     }
                 }
                 catch (SqlException ex)
                 {
                     MessageBox.Show($"Error Database: {ex.Message}\nNomor: {ex.Number}", "Database Error",
-                       MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
                 catch (Exception ex)
                 {
@@ -269,10 +315,15 @@ namespace BiroWisataForm
             }
         }
 
-        private void btnRefresh_Click(object sender, EventArgs e)
+        private void BtnRefresh_Click(object sender, EventArgs e)
         {
-            RefreshData();
-            MessageBox.Show("Data telah dimuat ulang.", "Refresh Selesai", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            if (txtSearch != null)
+            {
+                txtSearch.Clear(); // Clear search term before refreshing
+            }
+            RefreshData(); // This already calls ClearFields() at the end
+            MessageBox.Show("Data berhasil dimuat ulang.", "Refresh Selesai",
+                MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
 
         private void ClearFields()
@@ -280,83 +331,124 @@ namespace BiroWisataForm
             txtNama.Clear();
             txtNoTel.Clear();
             txtNoSim.Clear();
-            // cmbStatus.SelectedIndex = 0; // Jika ada ComboBox Status
             selectedDriverId = -1; // Reset ID terpilih
-            dgvDriver.ClearSelection(); // Hapus seleksi di grid
-            txtNama.Focus(); // Fokus ke field pertama
+            if(cmbStatus.Items.Count > 0) cmbStatus.SelectedIndex = 0; // Reset status
+            dgvDriver.ClearSelection();
+            txtNama.Focus();
         }
 
         // --- Tambahkan Validasi ---
         private bool ValidateInputFields()
         {
-            // Validasi field tidak boleh kosong
             if (string.IsNullOrWhiteSpace(txtNama.Text))
-            { MessageBox.Show("Nama Driver tidak boleh kosong!", "Peringatan", MessageBoxButtons.OK, MessageBoxIcon.Warning); txtNama.Focus(); return false; }
+            {
+                ShowError("Nama Driver tidak boleh kosong!", txtNama);
+                return false;
+            }
+
             if (string.IsNullOrWhiteSpace(txtNoTel.Text))
-            { MessageBox.Show("Nomor Telepon tidak boleh kosong!", "Peringatan", MessageBoxButtons.OK, MessageBoxIcon.Warning); txtNoTel.Focus(); return false; }
+            {
+                ShowError("Nomor Telepon tidak boleh kosong!", txtNoTel);
+                return false;
+            }
+
             if (string.IsNullOrWhiteSpace(txtNoSim.Text))
-            { MessageBox.Show("Nomor SIM tidak boleh kosong!", "Peringatan", MessageBoxButtons.OK, MessageBoxIcon.Warning); txtNoSim.Focus(); return false; }
-            // if (cmbStatus.SelectedIndex <= 0) // Jika pakai ComboBox Status
-            // { MessageBox.Show("Pilih Status Driver!", "Peringatan", MessageBoxButtons.OK, MessageBoxIcon.Warning); cmbStatus.Focus(); return false; }
+            {
+                ShowError("Nomor SIM tidak boleh kosong!", txtNoSim);
+                return false;
+            }
 
-
-            // Validasi format No Telepon
+            // Enhanced phone number validation
             string noTelp = txtNoTel.Text.Trim();
-            if (!noTelp.StartsWith("08") || noTelp.Length < 10 || noTelp.Length > 13 || !noTelp.All(char.IsDigit))
+            if (!System.Text.RegularExpressions.Regex.IsMatch(noTelp, @"^08[0-9]{8,11}$"))
             {
-                MessageBox.Show("Nomor telepon harus dimulai dengan '08', panjang 10-13 digit, dan hanya berisi angka!",
-                    "Format Salah", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                txtNoTel.Focus();
+                ShowError("Nomor telepon harus dimulai dengan '08' dan panjang 10-13 digit!", txtNoTel);
                 return false;
             }
 
-            // Validasi format No SIM
+            // Enhanced SIM number validation
             string noSim = txtNoSim.Text.Trim();
-            if (noSim.Length != 14 || !noSim.All(char.IsDigit)) // Asumsi SIM C Indonesia 14 digit angka
+            if (!System.Text.RegularExpressions.Regex.IsMatch(noSim, @"^[0-9]{14}$"))
             {
-                MessageBox.Show("Nomor SIM harus 14 digit angka!",
-                    "Format Salah", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                txtNoSim.Focus();
+                ShowError("Nomor SIM harus 14 digit angka!", txtNoSim);
                 return false;
             }
 
-            return true; // Jika semua valid
+            return true;
         }
 
+        private void ShowError(string message, Control control)
+        {
+            MessageBox.Show(message, "Input Tidak Valid", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            control.Focus();
+        }
 
         // --- Tambahkan Event Handler CellClick ---
         private void DgvDriver_CellClick(object sender, DataGridViewCellEventArgs e)
         {
-            if (e.RowIndex >= 0 && e.RowIndex < dgvDriver.Rows.Count)
+            if (e.RowIndex >= 0 && e.RowIndex < dgvDriver.Rows.Count) // Ensure valid row index
             {
                 DataGridViewRow row = dgvDriver.Rows[e.RowIndex];
 
-                // Ambil ID Driver
-                if (row.Cells["IDDriver"].Value != null && int.TryParse(row.Cells["IDDriver"].Value.ToString(), out int id))
+                selectedDriverId = Convert.ToInt32(row.Cells["IDDriver"].Value);
+                txtNama.Text = row.Cells["NamaDriver"].Value?.ToString() ?? ""; // Add null check
+                txtNoTel.Text = row.Cells["NoTelp"].Value?.ToString() ?? "";   // Add null check
+                txtNoSim.Text = row.Cells["NoSIM"].Value?.ToString() ?? "";     // Add null check
+
+                // Perbarui ComboBox Status - ROBUST VERSION
+                string statusValueFromGrid = row.Cells["Status"].Value?.ToString()?.Trim();
+
+                if (this.cmbStatus != null) // Ensure cmbStatus field is assigned
                 {
-                    selectedDriverId = id;
+                    if (!string.IsNullOrEmpty(statusValueFromGrid))
+                    {
+                        bool itemFound = false;
+                        for (int i = 0; i < cmbStatus.Items.Count; i++)
+                        {
+                            if (string.Equals(cmbStatus.Items[i].ToString(), statusValueFromGrid, StringComparison.OrdinalIgnoreCase))
+                            {
+                                cmbStatus.SelectedIndex = i;
+                                itemFound = true;
+                                break;
+                            }
+                        }
+                        if (!itemFound && cmbStatus.Items.Count > 0)
+                        {
+                            cmbStatus.SelectedIndex = 0; // Default or handle as error
+                            Console.WriteLine($"Warning: Status '{statusValueFromGrid}' not found in ComboBox. Defaulting.");
+                        }
+                    }
+                    else if (cmbStatus.Items.Count > 0) // If status from grid is null/empty
+                    {
+                        cmbStatus.SelectedIndex = 0; // Default to first item
+                    }
                 }
                 else
                 {
-                    selectedDriverId = -1; // Gagal ambil ID, reset
-                    ClearFields(); // Kosongkan field jika ID tidak valid
-                    return;
+                    Console.WriteLine("Error: cmbStatus field in Driver.cs is null.");
                 }
-
-                // Isi TextBox dari data grid (handle null dengan ?.)
-                txtNama.Text = row.Cells["NamaDriver"].Value?.ToString();
-                txtNoTel.Text = row.Cells["NoTelp"].Value?.ToString();
-                txtNoSim.Text = row.Cells["NoSIM"].Value?.ToString();
-                // string status = row.Cells["Status"].Value?.ToString(); // Jika ada kolom status
-                // cmbStatus.SelectedItem = status; // Jika pakai ComboBox Status
-            }
-            else
-            {
-                // Klik di header atau area kosong, bersihkan input
-                ClearFields();
             }
         }
 
+        // Add search functionality
+        private TextBox txtSearch;
+        private void InitializeSearchBox()
+        {
+            // Hapus implementasi lama dan cukup pastikan txtSearch sudah ada di form designer
+            if (this.Controls.Find("txtSearch", true).FirstOrDefault() is TextBox searchBox)
+            {
+                this.txtSearch = searchBox;
+                this.txtSearch.TextChanged += (s, e) => RefreshData(this.txtSearch.Text);
+            }
+        }
 
+        // private void TxtSearch_TextChanged(object sender, EventArgs e)
+        // {
+        //     if (dgvDriver.DataSource is DataTable dt)
+        //     {
+        //         string searchText = txtSearch.Text.ToLower();
+        //         dt.DefaultView.RowFilter = $"NamaDriver LIKE '%{searchText}%' OR NoTelp LIKE '%{searchText}%' OR NoSIM LIKE '%{searchText}%'";
+        //     }
+        // }
     }
 }

@@ -1,70 +1,78 @@
-﻿// PaketWisata.cs
-using System;
+﻿using System;
 using System.Data;
 using System.Data.SqlClient;
+using System.Drawing; // Added for Font/Color if needed
 using System.Windows.Forms;
+using System.Globalization; // Added for parsing potentially
+using System.Linq;
 
 namespace BiroWisataForm
 {
     public partial class PaketWisata : Form
     {
-        // --- Variabel Member ---
+        // --- Member Variables ---
         private string connectionString = @"Data Source=KAMILIA\KAMILIANURMALA;Initial Catalog=BiroWisata;Integrated Security=True;";
-        private int selectedPaketId = -1; // Menyimpan ID paket yang dipilih di grid
+        private int selectedPaketId = -1;
 
         // --- Constructor ---
         public PaketWisata()
         {
             InitializeComponent();
-            InitializeDataGridView(); // Siapkan grid
-            LoadDrivers();          // Isi ComboBox Driver
-            LoadKendaraan();        // Isi ComboBox Kendaraan
-            LoadKategori();         // Panggil method untuk isi ComboBox Kategori
-            RefreshData();          // Tampilkan data awal di grid
+            InitializeDataGridViewSettings(); // Configure DGV properties only
+            InitializeSearchBox(); // <--- TAMBAHKAN INI
+            LoadDrivers();
+            LoadKendaraan();
+            LoadKategori();
+            // RefreshData is called in Load event
         }
 
-        // --- Inisialisasi Kontrol ---
-        private void InitializeDataGridView()
+        // --- Form Load ---
+        private void PaketWisata_Load(object sender, EventArgs e)
         {
-            // ... (kode InitializeDataGridView Anda yang sudah ada, tidak perlu diubah) ...
-            dgvPaketWisata.AutoGenerateColumns = false;
+            RefreshData(); // Load data when form loads
+            // Ensure SelectionChanged is connected in the designer
+            // this.dgvPaketWisata.SelectionChanged += new System.EventHandler(this.DgvPaketWisata_SelectionChanged);
+        }
+
+        // --- Control Initialization ---
+        private void InitializeDataGridViewSettings()
+        {
+            // Set DGV properties. Columns are defined in Designer.cs.
+            dgvPaketWisata.AutoGenerateColumns = false; // CRITICAL
             dgvPaketWisata.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
             dgvPaketWisata.MultiSelect = false;
             dgvPaketWisata.ReadOnly = true;
             dgvPaketWisata.AllowUserToAddRows = false;
-            dgvPaketWisata.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.AllCells;
-            dgvPaketWisata.CellClick += DgvPaketWisata_CellClick;
+            dgvPaketWisata.AllowUserToDeleteRows = false;
+            // dgvPaketWisata.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.AllCells; // Or Fill, or None if widths are set manually
+            dgvPaketWisata.RowHeadersVisible = false;
 
-            dgvPaketWisata.Columns.Add(new DataGridViewTextBoxColumn { Name = "IDPaket", HeaderText = "ID", DataPropertyName = "IDPaket", Visible = false });
-            dgvPaketWisata.Columns.Add(new DataGridViewTextBoxColumn { Name = "NamaPaket", HeaderText = "Nama Paket", DataPropertyName = "NamaPaket" });
-            dgvPaketWisata.Columns.Add(new DataGridViewTextBoxColumn { Name = "NamaDriver", HeaderText = "Driver", DataPropertyName = "NamaDriver" });
-            dgvPaketWisata.Columns.Add(new DataGridViewTextBoxColumn { Name = "KendaraanInfo", HeaderText = "Kendaraan", DataPropertyName = "KendaraanInfo" });
-            dgvPaketWisata.Columns.Add(new DataGridViewTextBoxColumn { Name = "Destinasi", HeaderText = "Destinasi", DataPropertyName = "Destinasi" });
-            dgvPaketWisata.Columns.Add(new DataGridViewTextBoxColumn { Name = "Harga", HeaderText = "Harga", DataPropertyName = "Harga", DefaultCellStyle = new DataGridViewCellStyle { Format = "N0" } });
-            dgvPaketWisata.Columns.Add(new DataGridViewTextBoxColumn { Name = "Durasi", HeaderText = "Durasi (Hari)", DataPropertyName = "Durasi" });
-            dgvPaketWisata.Columns.Add(new DataGridViewTextBoxColumn { Name = "Fasilitas", HeaderText = "Fasilitas", DataPropertyName = "Fasilitas" });
-            dgvPaketWisata.Columns.Add(new DataGridViewTextBoxColumn { Name = "Kategori", HeaderText = "Kategori", DataPropertyName = "Kategori" });
-            dgvPaketWisata.Columns.Add(new DataGridViewTextBoxColumn { Name = "Kuota", HeaderText = "Kuota", DataPropertyName = "Kuota" });
-            dgvPaketWisata.Columns.Add(new DataGridViewTextBoxColumn { Name = "Jadwal", HeaderText = "Jadwal", DataPropertyName = "JadwalKeberangkatan", DefaultCellStyle = new DataGridViewCellStyle { Format = "dd/MM/yyyy" } });
-            dgvPaketWisata.Columns.Add(new DataGridViewTextBoxColumn { Name = "IDDriver", DataPropertyName = "IDDriver", Visible = false });
-            dgvPaketWisata.Columns.Add(new DataGridViewTextBoxColumn { Name = "IDKendaraan", DataPropertyName = "IDKendaraan", Visible = false });
+            // Optional Styling overrides (most should be in Designer.cs)
+            // dgvPaketWisata.DefaultCellStyle.Font = new Font("Segoe UI", 9F);
         }
 
-        // --- Memuat Data ke Kontrol ---
+        private void InitializeSearchBox()
+        {
+            // Pastikan Anda sudah menambahkan TextBox dengan nama 'txtSearch' di form designer
+            if (this.Controls.Find("txtSearch", true).FirstOrDefault() is TextBox txtSearch)
+            {
+                txtSearch.TextChanged += (s, e) =>
+                {
+                    RefreshData(txtSearch.Text);
+                };
+            }
+        }
 
-        // --- Method untuk Load Kategori (BARU) ---
         private void LoadKategori()
         {
-            comboBoxKategori.Items.Clear(); // Pastikan kosong dulu
-            comboBoxKategori.Items.Add("-- Pilih Kategori --"); // Placeholder
-            comboBoxKategori.Items.Add("Luar Kota");
-            comboBoxKategori.Items.Add("Dalam Kota");
-            comboBoxKategori.SelectedIndex = 0; // Pilih placeholder sebagai default
-                                                // Atur DropDownStyle ke DropDownList di Properties window agar user tidak bisa ketik manual
-            comboBoxKategori.DropDownStyle = ComboBoxStyle.DropDownList;
+            cmbKategori.Items.Clear(); // Use the renamed control
+            cmbKategori.Items.Add("-- Pilih Kategori --");
+            cmbKategori.Items.Add("Luar Kota");
+            cmbKategori.Items.Add("Dalam Kota");
+            cmbKategori.SelectedIndex = 0;
+            cmbKategori.DropDownStyle = ComboBoxStyle.DropDownList;
         }
 
-        // ... (LoadDrivers, LoadKendaraan, RefreshData Anda yang sudah ada) ...
         private void LoadDrivers()
         {
             using (var conn = new SqlConnection(connectionString))
@@ -73,7 +81,8 @@ namespace BiroWisataForm
                 {
                     conn.Open();
                     var dt = new DataTable();
-                    var adapter = new SqlDataAdapter("SELECT IDDriver, NamaDriver FROM Driver WHERE Status = 'Aktif'", conn);
+                    // Select only active drivers that haven't been soft-deleted
+                    var adapter = new SqlDataAdapter("SELECT IDDriver, NamaDriver FROM Driver WHERE Status = 'Aktif' AND IsDeleted = 0", conn);
                     adapter.Fill(dt);
 
                     var emptyRow = dt.NewRow();
@@ -89,6 +98,7 @@ namespace BiroWisataForm
                 catch (Exception ex) { MessageBox.Show($"Error Load Driver: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error); }
             }
         }
+
         private void LoadKendaraan()
         {
             using (var conn = new SqlConnection(connectionString))
@@ -97,7 +107,8 @@ namespace BiroWisataForm
                 {
                     conn.Open();
                     var dt = new DataTable();
-                    string sql = "SELECT IDKendaraan, Jenis + ' - ' + PlatNomor AS Deskripsi FROM Kendaraan";
+                    // Select only active vehicles
+                    string sql = "SELECT IDKendaraan, Jenis + ' - ' + PlatNomor AS Deskripsi FROM Kendaraan WHERE Status = 'Aktif'";
                     var adapter = new SqlDataAdapter(sql, conn);
                     adapter.Fill(dt);
 
@@ -114,7 +125,8 @@ namespace BiroWisataForm
                 catch (Exception ex) { MessageBox.Show($"Error Load Kendaraan: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error); }
             }
         }
-        private void RefreshData()
+
+        private bool RefreshData(string searchTerm = null) // <-- CHANGED from void to bool
         {
             using (var conn = new SqlConnection(connectionString))
             {
@@ -122,55 +134,72 @@ namespace BiroWisataForm
                 {
                     conn.Open();
                     string query = @"
-                    SELECT
-                        p.IDPaket, p.NamaPaket, p.Destinasi, p.Harga, p.Durasi,
-                        p.Fasilitas, p.Kategori, p.Kuota, p.JadwalKeberangkatan,
-                        p.IDDriver, d.NamaDriver,
-                        p.IDKendaraan, k.Jenis + ' - ' + k.PlatNomor AS KendaraanInfo
-                    FROM PaketWisata p
-                    INNER JOIN Driver d ON p.IDDriver = d.IDDriver
-                    INNER JOIN Kendaraan k ON p.IDKendaraan = k.IDKendaraan";
+            SELECT
+                p.IDPaket, p.NamaPaket, p.Destinasi, p.Harga, p.Durasi,
+                p.Fasilitas, p.Kategori, p.Kuota, p.JadwalKeberangkatan,
+                p.IDDriver, d.NamaDriver,
+                p.IDKendaraan, k.Jenis + ' - ' + k.PlatNomor AS KendaraanInfo,
+                p.CreatedAt, p.UpdatedAt, p.CreatedBy, p.UpdatedBy
+            FROM PaketWisata p
+            INNER JOIN Driver d ON p.IDDriver = d.IDDriver
+            INNER JOIN Kendaraan k ON p.IDKendaraan = k.IDKendaraan
+            WHERE p.IsDeleted = 0";
+
+                    if (!string.IsNullOrWhiteSpace(searchTerm))
+                    {
+                        query += " AND (p.NamaPaket LIKE @SearchTerm OR p.Destinasi LIKE @SearchTerm OR p.Kategori LIKE @SearchTerm OR d.NamaDriver LIKE @SearchTerm)";
+                    }
 
                     var dt = new DataTable();
                     var adapter = new SqlDataAdapter(query, conn);
+
+                    if (!string.IsNullOrWhiteSpace(searchTerm))
+                    {
+                        adapter.SelectCommand.Parameters.AddWithValue("@SearchTerm", $"%{searchTerm}%");
+                    }
+
                     adapter.Fill(dt);
 
                     dgvPaketWisata.DataSource = null;
                     dgvPaketWisata.DataSource = dt;
+
+                    ClearInputs();
+                    return true; // <-- ADDED: Return true on success
                 }
-                catch (SqlException ex) { MessageBox.Show($"Error DB Refresh Paket: {ex.Message}", "DB Error", MessageBoxButtons.OK, MessageBoxIcon.Error); }
-                catch (Exception ex) { MessageBox.Show($"Error Refresh Paket: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error); }
+                catch (SqlException ex)
+                {
+                    MessageBox.Show($"Error DB Refresh Paket: {ex.Message}", "DB Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return false; // <-- ADDED: Return false on database error
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Error Refresh Paket: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return false; // <-- ADDED: Return false on general error
+                }
             }
-            ClearInputs(); // Panggil ClearInputs setelah refresh
+            // The ClearInputs() call was here, but it's better inside the 'try' block
+            // so it only runs on a successful refresh.
         }
 
 
-        // --- Event Handler Tombol CRUD ---
+        // --- CRUD Button Event Handlers ---
         private void btnTambah_Click(object sender, EventArgs e)
         {
-            // --- PERUBAHAN di btnTambah_Click ---
-            if (!ValidateInputs(isUpdate: false)) return; // Validasi (sudah termasuk ComboBox Kategori)
+            if (!ValidateInputs()) return;
 
-            if (!decimal.TryParse(txtHarga.Text.Trim(), out decimal harga) || harga <= 0)
-            { MessageBox.Show("Harga harus berupa angka positif!", "Input Tidak Valid", MessageBoxButtons.OK, MessageBoxIcon.Warning); txtHarga.Focus(); return; }
-            if (!int.TryParse(txtDurasi.Text.Trim(), out int durasi) || durasi <= 0)
-            { MessageBox.Show("Durasi harus berupa angka positif!", "Input Tidak Valid", MessageBoxButtons.OK, MessageBoxIcon.Warning); txtDurasi.Focus(); return; }
-            if (!int.TryParse(txtKuota.Text.Trim(), out int kuota) || kuota < 0)
-            { MessageBox.Show("Kuota harus berupa angka non-negatif!", "Input Tidak Valid", MessageBoxButtons.OK, MessageBoxIcon.Warning); txtKuota.Focus(); return; }
+            decimal.TryParse(txtHarga.Text.Trim(), out decimal harga);
+            short.TryParse(txtDurasi.Text.Trim(), out short durasi);
+            short.TryParse(txtKuota.Text.Trim(), out short kuota);
 
             using (var conn = new SqlConnection(connectionString))
             {
                 try
                 {
                     conn.Open();
-                    string sql = @"INSERT INTO PaketWisata
-                                   (IDDriver, IDKendaraan, NamaPaket, Destinasi, Harga, Durasi,
-                                    Fasilitas, Kategori, Kuota, JadwalKeberangkatan)
-                                   VALUES
-                                   (@IDDriver, @IDKendaraan, @NamaPaket, @Destinasi, @Harga, @Durasi,
-                                    @Fasilitas, @Kategori, @Kuota, @Jadwal)";
-                    using (var cmd = new SqlCommand(sql, conn))
+                    using (var cmd = new SqlCommand("sp_AddPaketWisata", conn))
                     {
+                        cmd.CommandType = CommandType.StoredProcedure;
+
                         cmd.Parameters.AddWithValue("@IDDriver", cmbDriver.SelectedValue);
                         cmd.Parameters.AddWithValue("@IDKendaraan", cmbKendaraan.SelectedValue);
                         cmd.Parameters.AddWithValue("@NamaPaket", txtNamaPaket.Text.Trim());
@@ -178,17 +207,18 @@ namespace BiroWisataForm
                         cmd.Parameters.AddWithValue("@Harga", harga);
                         cmd.Parameters.AddWithValue("@Durasi", durasi);
                         cmd.Parameters.AddWithValue("@Fasilitas", txtFasilitas.Text.Trim());
-                        // Ambil nilai dari ComboBox Kategori
-                        cmd.Parameters.AddWithValue("@Kategori", comboBoxKategori.SelectedItem.ToString()); // <-- PERUBAHAN
+                        cmd.Parameters.AddWithValue("@Kategori", cmbKategori.SelectedItem.ToString());
                         cmd.Parameters.AddWithValue("@Kuota", kuota);
-                        cmd.Parameters.AddWithValue("@Jadwal", dateTimePicker1.Value.Date);
+                        cmd.Parameters.AddWithValue("@JadwalKeberangkatan", dtpJadwalKeberangkatan.Value.Date);
+                        cmd.Parameters.AddWithValue("@CreatedBy", Environment.UserName);
 
-                        if (cmd.ExecuteNonQuery() > 0)
-                        {
-                            MessageBox.Show("Paket wisata berhasil ditambahkan!", "Sukses", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                            RefreshData();
-                        }
-                        else { /* Handle no rows affected */ }
+                        // --- PERUBAHAN DI SINI ---
+                        // We execute the command. If it fails, it will throw an exception.
+                        // If it succeeds, we proceed to the success message.
+                        cmd.ExecuteNonQuery();
+
+                        MessageBox.Show("Paket wisata berhasil ditambahkan!", "Sukses", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        RefreshData();
                     }
                 }
                 catch (SqlException ex) { HandleSqlError(ex, "menambahkan"); }
@@ -196,34 +226,31 @@ namespace BiroWisataForm
             }
         }
 
+
         private void btnUbah_Click(object sender, EventArgs e)
         {
-            // --- PERUBAHAN di btnUbah_Click ---
             if (selectedPaketId < 0)
-            { MessageBox.Show("Pilih paket wisata yang akan diubah!", "Peringatan", MessageBoxButtons.OK, MessageBoxIcon.Warning); return; }
+            {
+                MessageBox.Show("Pilih paket wisata yang akan diubah!", "Peringatan", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
 
-            if (!ValidateInputs(isUpdate: true)) return; // Validasi
+            if (!ValidateInputs()) return;
 
-            if (!decimal.TryParse(txtHarga.Text.Trim(), out decimal harga) || harga <= 0)
-            { MessageBox.Show("Harga harus berupa angka positif!", "Input Tidak Valid", MessageBoxButtons.OK, MessageBoxIcon.Warning); txtHarga.Focus(); return; }
-            if (!int.TryParse(txtDurasi.Text.Trim(), out int durasi) || durasi <= 0)
-            { MessageBox.Show("Durasi harus berupa angka positif!", "Input Tidak Valid", MessageBoxButtons.OK, MessageBoxIcon.Warning); txtDurasi.Focus(); return; }
-            if (!int.TryParse(txtKuota.Text.Trim(), out int kuota) || kuota < 0)
-            { MessageBox.Show("Kuota harus berupa angka non-negatif!", "Input Tidak Valid", MessageBoxButtons.OK, MessageBoxIcon.Warning); txtKuota.Focus(); return; }
+            decimal.TryParse(txtHarga.Text.Trim(), out decimal harga);
+            short.TryParse(txtDurasi.Text.Trim(), out short durasi);
+            short.TryParse(txtKuota.Text.Trim(), out short kuota);
 
             using (var conn = new SqlConnection(connectionString))
             {
                 try
                 {
                     conn.Open();
-                    string sql = @"UPDATE PaketWisata SET
-                                       IDDriver = @IDDriver, IDKendaraan = @IDKendaraan, NamaPaket = @NamaPaket,
-                                       Destinasi = @Destinasi, Harga = @Harga, Durasi = @Durasi,
-                                       Fasilitas = @Fasilitas, Kategori = @Kategori, Kuota = @Kuota,
-                                       JadwalKeberangkatan = @Jadwal
-                                   WHERE IDPaket = @ID";
-                    using (var cmd = new SqlCommand(sql, conn))
+                    using (var cmd = new SqlCommand("sp_UpdatePaketWisata", conn))
                     {
+                        cmd.CommandType = CommandType.StoredProcedure;
+
+                        cmd.Parameters.AddWithValue("@IDPaket", selectedPaketId);
                         cmd.Parameters.AddWithValue("@IDDriver", cmbDriver.SelectedValue);
                         cmd.Parameters.AddWithValue("@IDKendaraan", cmbKendaraan.SelectedValue);
                         cmd.Parameters.AddWithValue("@NamaPaket", txtNamaPaket.Text.Trim());
@@ -231,18 +258,19 @@ namespace BiroWisataForm
                         cmd.Parameters.AddWithValue("@Harga", harga);
                         cmd.Parameters.AddWithValue("@Durasi", durasi);
                         cmd.Parameters.AddWithValue("@Fasilitas", txtFasilitas.Text.Trim());
-                        // Ambil nilai dari ComboBox Kategori
-                        cmd.Parameters.AddWithValue("@Kategori", comboBoxKategori.SelectedItem.ToString()); // <-- PERUBAHAN
+                        cmd.Parameters.AddWithValue("@Kategori", cmbKategori.SelectedItem.ToString());
                         cmd.Parameters.AddWithValue("@Kuota", kuota);
-                        cmd.Parameters.AddWithValue("@Jadwal", dateTimePicker1.Value.Date);
-                        cmd.Parameters.AddWithValue("@ID", selectedPaketId);
+                        cmd.Parameters.AddWithValue("@JadwalKeberangkatan", dtpJadwalKeberangkatan.Value.Date);
+                        cmd.Parameters.AddWithValue("@UpdatedBy", Environment.UserName);
 
-                        if (cmd.ExecuteNonQuery() > 0)
-                        {
-                            MessageBox.Show("Paket wisata berhasil diubah!", "Sukses", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                            RefreshData();
-                        }
-                        else { MessageBox.Show("Data tidak berubah atau tidak ditemukan.", "Informasi", MessageBoxButtons.OK, MessageBoxIcon.Information); }
+                        // --- PERUBAHAN DI SINI ---
+                        // We execute the command. If it fails, it throws an exception.
+                        // If the ID doesn't exist, it simply does nothing but doesn't throw an error.
+                        // This is a more direct way to handle SPs with SET NOCOUNT ON.
+                        cmd.ExecuteNonQuery();
+
+                        MessageBox.Show("Paket wisata berhasil diubah!", "Sukses", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        RefreshData();
                     }
                 }
                 catch (SqlException ex) { HandleSqlError(ex, "mengubah"); }
@@ -250,195 +278,267 @@ namespace BiroWisataForm
             }
         }
 
-        // ... (btnHapus_Click Anda yang sudah ada, tidak perlu diubah terkait Kategori) ...
+
+        // Ganti metode ini di PaketWisata.cs
         private void btnHapus_Click(object sender, EventArgs e)
         {
             if (selectedPaketId < 0)
-            { MessageBox.Show("Pilih paket wisata yang akan dihapus!", "Peringatan", MessageBoxButtons.OK, MessageBoxIcon.Warning); return; }
-
-            if (MessageBox.Show("Yakin ingin menghapus paket wisata ini? Tindakan ini mungkin mempengaruhi data Pemesanan terkait.", "Konfirmasi Hapus", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
             {
-                using (var conn = new SqlConnection(connectionString))
-                {
-                    try
-                    {
-                        conn.Open();
-                        string sql = "DELETE FROM PaketWisata WHERE IDPaket = @ID";
-                        using (var cmd = new SqlCommand(sql, conn))
-                        {
-                            cmd.Parameters.AddWithValue("@ID", selectedPaketId);
+                MessageBox.Show("Pilih paket wisata yang akan dihapus!", "Peringatan", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
 
-                            if (cmd.ExecuteNonQuery() > 0)
-                            {
-                                MessageBox.Show("Paket wisata berhasil dihapus!", "Sukses", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                                RefreshData();
-                            }
-                            else { MessageBox.Show("Gagal menghapus (mungkin sudah dihapus).", "Gagal", MessageBoxButtons.OK, MessageBoxIcon.Warning); }
-                        }
+            // Tampilkan pesan konfirmasi yang lebih detail
+            DialogResult confirmation = MessageBox.Show(
+                "Yakin ingin menghapus paket wisata ini?\n\nPERHATIAN: Semua pemesanan aktif untuk paket ini akan DIBATALKAN secara otomatis.",
+                "Konfirmasi Hapus dengan Efek Berantai",
+                MessageBoxButtons.YesNo,
+                MessageBoxIcon.Warning);
+
+            if (confirmation != DialogResult.Yes)
+            {
+                return;
+            }
+
+            // =================================================================
+            // LOGIKA TRANSAKSI DIMULAI DI SINI
+            // =================================================================
+
+            SqlConnection conn = new SqlConnection(connectionString);
+            SqlTransaction transaction = null;
+
+            try
+            {
+                // 1. Buka Koneksi dan Mulai Transaksi
+                conn.Open();
+                transaction = conn.BeginTransaction();
+
+                // --- Langkah A: Nonaktifkan (soft delete) Paket Wisata ---
+                string updatePaketQuery = @"UPDATE PaketWisata SET
+                                        IsDeleted = 1,
+                                        Status = 'Tidak Aktif',
+                                        UpdatedAt = GETDATE(),
+                                        UpdatedBy = @UpdatedBy
+                                    WHERE IDPaket = @IDPaket;";
+
+                using (SqlCommand updatePaketCmd = new SqlCommand(updatePaketQuery, conn, transaction))
+                {
+                    updatePaketCmd.Parameters.AddWithValue("@IDPaket", selectedPaketId);
+                    updatePaketCmd.Parameters.AddWithValue("@UpdatedBy", Environment.UserName);
+                    updatePaketCmd.ExecuteNonQuery();
+                }
+
+                // --- Langkah B: Batalkan semua pemesanan terkait yang masih aktif ---
+                // Kita hanya membatalkan yang statusnya 'Menunggu' atau 'Dikonfirmasi'
+                string cancelPemesananQuery = @"UPDATE Pemesanan SET
+                                            StatusPemesanan = 'Dibatalkan',
+                                            UpdatedAt = GETDATE(),
+                                            UpdatedBy = @UpdatedBy
+                                        WHERE IDPaket = @IDPaket 
+                                        AND StatusPemesanan IN ('Menunggu', 'Dikonfirmasi');";
+
+                int pemesananDibatalkan = 0;
+                using (SqlCommand cancelPemesananCmd = new SqlCommand(cancelPemesananQuery, conn, transaction))
+                {
+                    cancelPemesananCmd.Parameters.AddWithValue("@IDPaket", selectedPaketId);
+                    cancelPemesananCmd.Parameters.AddWithValue("@UpdatedBy", "SYSTEM_AUTO_CANCEL"); // Tandai bahwa ini dibatalkan oleh sistem
+
+                }
+
+                // 3. Jika semua berhasil, Commit Transaksi
+                transaction.Commit();
+
+                MessageBox.Show(
+                    $"Paket wisata berhasil dihapus.",
+                    "Operasi Sukses",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Information);
+
+                RefreshData();
+            }
+            catch (Exception ex)
+            {
+                // 4. Jika terjadi error, Rollback semua perubahan
+                MessageBox.Show($"Operasi gagal, semua perubahan dibatalkan: {ex.Message}", "Transaksi Gagal", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                try
+                {
+                    if (transaction != null)
+                    {
+                        transaction.Rollback();
                     }
-                    catch (SqlException ex) { HandleSqlError(ex, "menghapus"); }
-                    catch (Exception ex) { MessageBox.Show($"Error: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error); }
+                }
+                catch (Exception rollbackEx)
+                {
+                    MessageBox.Show($"Kesalahan fatal saat rollback: {rollbackEx.Message}", "Error Kritis", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+            }
+            finally
+            {
+                // 5. Selalu tutup koneksi
+                if (conn.State == ConnectionState.Open)
+                {
+                    conn.Close();
                 }
             }
         }
+
+
         private void btnRefresh_Click(object sender, EventArgs e)
         {
-            RefreshData();
-            MessageBox.Show("Data telah dimuat ulang.", "Refresh Selesai", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            if (this.Controls.Find("txtSearch", true).FirstOrDefault() is TextBox txtSearch)
+            {
+                txtSearch.Clear();
+            }
+
+            // --- PERUBAHAN DI SINI ---
+            // Call RefreshData and check if it returned true (meaning it succeeded)
+            if (RefreshData())
+            {
+                MessageBox.Show("Data berhasil dimuat ulang.", "Sukses", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+            // If RefreshData() fails, it will return false and will have already shown its own error message.
         }
 
 
         // --- Helper Methods ---
-        private bool ValidateInputs(bool isUpdate) // Parameter isUpdate mungkin tidak relevan lagi di sini
+        private bool ValidateInputs() // Removed unused isUpdate parameter
         {
-            // --- PERUBAHAN di ValidateInputs ---
+            this.errorProvider1.Clear(); // Use the error provider from the designer
+            bool isValid = true;
 
-            // Validasi ComboBox FK
-            if (cmbDriver.SelectedValue == null || cmbDriver.SelectedValue == DBNull.Value)
-            { MessageBox.Show("Pilih Driver yang valid!", "Input Tidak Valid", MessageBoxButtons.OK, MessageBoxIcon.Warning); cmbDriver.Focus(); return false; }
-            if (cmbKendaraan.SelectedValue == null || cmbKendaraan.SelectedValue == DBNull.Value)
-            { MessageBox.Show("Pilih Kendaraan yang valid!", "Input Tidak Valid", MessageBoxButtons.OK, MessageBoxIcon.Warning); cmbKendaraan.Focus(); return false; }
+            // Validate ComboBox FKs
+            if (cmbDriver.SelectedValue == null || cmbDriver.SelectedValue == DBNull.Value || cmbDriver.SelectedIndex <= 0) // Check index too for placeholder
+            { errorProvider1.SetError(cmbDriver, "Pilih Driver yang valid!"); isValid = false; }
+            if (cmbKendaraan.SelectedValue == null || cmbKendaraan.SelectedValue == DBNull.Value || cmbKendaraan.SelectedIndex <= 0)
+            { errorProvider1.SetError(cmbKendaraan, "Pilih Kendaraan yang valid!"); isValid = false; }
+            if (cmbKategori.SelectedIndex <= 0) // Use renamed control
+            { errorProvider1.SetError(cmbKategori, "Pilih Kategori yang valid!"); isValid = false; }
 
-            // Validasi ComboBox Kategori
-            if (comboBoxKategori.SelectedIndex <= 0) // Index 0 adalah placeholder "-- Pilih Kategori --"
-            { MessageBox.Show("Pilih Kategori yang valid!", "Input Tidak Valid", MessageBoxButtons.OK, MessageBoxIcon.Warning); comboBoxKategori.Focus(); return false; }
-
-            // Validasi TextBox tidak boleh kosong
+            // Validate TextBoxes
             if (string.IsNullOrWhiteSpace(txtNamaPaket.Text))
-            { MessageBox.Show("Nama Paket tidak boleh kosong!", "Input Tidak Valid", MessageBoxButtons.OK, MessageBoxIcon.Warning); txtNamaPaket.Focus(); return false; }
+            { errorProvider1.SetError(txtNamaPaket, "Nama Paket tidak boleh kosong!"); isValid = false; }
             if (string.IsNullOrWhiteSpace(txtDestinasi.Text))
-            { MessageBox.Show("Destinasi tidak boleh kosong!", "Input Tidak Valid", MessageBoxButtons.OK, MessageBoxIcon.Warning); txtDestinasi.Focus(); return false; }
-            if (string.IsNullOrWhiteSpace(txtHarga.Text))
-            { MessageBox.Show("Harga tidak boleh kosong!", "Input Tidak Valid", MessageBoxButtons.OK, MessageBoxIcon.Warning); txtHarga.Focus(); return false; }
-            if (string.IsNullOrWhiteSpace(txtDurasi.Text))
-            { MessageBox.Show("Durasi tidak boleh kosong!", "Input Tidak Valid", MessageBoxButtons.OK, MessageBoxIcon.Warning); txtDurasi.Focus(); return false; }
+            { errorProvider1.SetError(txtDestinasi, "Destinasi tidak boleh kosong!"); isValid = false; }
             if (string.IsNullOrWhiteSpace(txtFasilitas.Text))
-            { MessageBox.Show("Fasilitas tidak boleh kosong!", "Input Tidak Valid", MessageBoxButtons.OK, MessageBoxIcon.Warning); txtFasilitas.Focus(); return false; }
-            // Hapus validasi TextBox Kategori yang lama
-            // if (string.IsNullOrWhiteSpace(txtKategori.Text)) ... (HAPUS)
-            // if (txtKategori.Text.Trim() != "Luar Kota" && txtKategori.Text.Trim() != "Dalam Kota") ... (HAPUS)
+            { errorProvider1.SetError(txtFasilitas, "Fasilitas tidak boleh kosong!"); isValid = false; }
+
+            // Validate Numeric TextBoxes
+            if (string.IsNullOrWhiteSpace(txtHarga.Text))
+            { errorProvider1.SetError(txtHarga, "Harga tidak boleh kosong!"); isValid = false; }
+            else if (!decimal.TryParse(txtHarga.Text, out decimal harga) || harga <= 0)
+            { errorProvider1.SetError(txtHarga, "Harga harus berupa angka positif!"); isValid = false; }
+
+            if (string.IsNullOrWhiteSpace(txtDurasi.Text))
+            { errorProvider1.SetError(txtDurasi, "Durasi tidak boleh kosong!"); isValid = false; }
+            else if (!short.TryParse(txtDurasi.Text, out short durasi) || durasi <= 0) // Use short for smallint
+            { errorProvider1.SetError(txtDurasi, "Durasi harus berupa angka positif!"); isValid = false; }
+
             if (string.IsNullOrWhiteSpace(txtKuota.Text))
-            { MessageBox.Show("Kuota tidak boleh kosong!", "Input Tidak Valid", MessageBoxButtons.OK, MessageBoxIcon.Warning); txtKuota.Focus(); return false; }
+            { errorProvider1.SetError(txtKuota, "Kuota tidak boleh kosong!"); isValid = false; }
+            else if (!short.TryParse(txtKuota.Text, out short kuota) || kuota < 0) // Use short for smallint
+            { errorProvider1.SetError(txtKuota, "Kuota harus berupa angka non-negatif!"); isValid = false; }
 
-            // Validasi format angka
-            if (!decimal.TryParse(txtHarga.Text, out _))
-            { MessageBox.Show("Format Harga tidak valid!", "Input Tidak Valid", MessageBoxButtons.OK, MessageBoxIcon.Warning); txtHarga.Focus(); return false; }
-            if (!int.TryParse(txtDurasi.Text, out _))
-            { MessageBox.Show("Format Durasi tidak valid!", "Input Tidak Valid", MessageBoxButtons.OK, MessageBoxIcon.Warning); txtDurasi.Focus(); return false; }
-            if (!int.TryParse(txtKuota.Text, out _))
-            { MessageBox.Show("Format Kuota tidak valid!", "Input Tidak Valid", MessageBoxButtons.OK, MessageBoxIcon.Warning); txtKuota.Focus(); return false; }
+            // Basic validation for DateTimePicker (usually less critical unless specific range needed)
+            // if (dtpJadwalKeberangkatan.Value.Date < DateTime.Now.Date)
+            // { errorProvider1.SetError(dtpJadwalKeberangkatan, "Jadwal tidak boleh di masa lalu!"); isValid = false; }
 
-            return true; // Jika semua valid
+            if (!isValid)
+            {
+                MessageBox.Show("Harap perbaiki data yang tidak valid.", "Validasi Gagal", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            }
+            return isValid;
         }
 
         private void ClearInputs()
         {
-            // --- PERUBAHAN di ClearInputs ---
             selectedPaketId = -1;
             cmbDriver.SelectedIndex = 0;
             cmbKendaraan.SelectedIndex = 0;
-            comboBoxKategori.SelectedIndex = 0; // Reset ComboBox Kategori
+            cmbKategori.SelectedIndex = 0; // Use renamed control
             txtNamaPaket.Clear();
             txtDestinasi.Clear();
             txtHarga.Clear();
             txtDurasi.Clear();
             txtFasilitas.Clear();
-            // Hapus txtKategori.Clear(); jika ada
             txtKuota.Clear();
-            dateTimePicker1.Value = DateTime.Now;
+            dtpJadwalKeberangkatan.Value = DateTime.Now; // Use renamed control
             dgvPaketWisata.ClearSelection();
             txtNamaPaket.Focus();
+            errorProvider1.Clear(); // Use the form's error provider
         }
 
-        // --- Tambahkan Helper untuk Error SQL (jika belum ada) ---
         private void HandleSqlError(SqlException ex, string operation)
         {
+            // Simplified error handling for now, can be expanded as before
             MessageBox.Show($"Error Database saat {operation} paket: {ex.Message}\nNomor Error: {ex.Number}", "Database Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            if (ex.Number == 547) // Foreign Key constraint violation
-            {
-                // Pesan bisa lebih spesifik tergantung tabel mana yg FK nya error
-                if (ex.Message.Contains("FK__PaketWisa__IDDri"))
-                {
-                    MessageBox.Show("Driver yang dipilih tidak valid atau tidak ada.", "Kesalahan Referensi Data", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                }
-                else if (ex.Message.Contains("FK__PaketWisa__IDKen"))
-                {
-                    MessageBox.Show("Kendaraan yang dipilih tidak valid atau tidak ada.", "Kesalahan Referensi Data", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                }
-                else if (ex.Message.Contains("FK__Pemesanan__IDPak")) // Error saat Hapus
-                {
-                    MessageBox.Show("Tidak dapat menghapus paket ini karena sudah digunakan dalam Pemesanan.", "Error Relasi Database", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                }
-                else if (ex.Message.Contains("FK__Operasio__IDPak")) // Error saat Hapus
-                {
-                    MessageBox.Show("Tidak dapat menghapus paket ini karena sudah digunakan dalam data Operasional.", "Error Relasi Database", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                }
-                else
-                {
-                    MessageBox.Show("Terjadi kesalahan referensi data. Pastikan data terkait valid.", "Kesalahan Referensi Data", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                }
-            }
-            // Bisa tambah penanganan CHECK constraint jika perlu (meski validasi UI harusnya mencegah)
+            // Add specific FK checks if needed, especially for INSERT/UPDATE
         }
 
 
-        // --- Event Handler Grid ---
-        private void DgvPaketWisata_CellClick(object sender, DataGridViewCellEventArgs e)
+        // --- DataGridView Event Handlers ---
+        private void PopulateFieldsFromSelectedRow()
         {
-            // --- PERUBAHAN di DgvPaketWisata_CellClick ---
-            if (e.RowIndex >= 0 && e.RowIndex < dgvPaketWisata.Rows.Count)
+            if (dgvPaketWisata.SelectedRows.Count > 0)
             {
-                DataGridViewRow row = dgvPaketWisata.Rows[e.RowIndex];
+                DataGridViewRow row = dgvPaketWisata.SelectedRows[0];
 
-                if (row.Cells["IDPaket"].Value != null && int.TryParse(row.Cells["IDPaket"].Value.ToString(), out int idPaket))
+                // Use column NAME defined in Designer.cs or programmatically
+                if (row.Cells["colIDPaket"].Value != null && int.TryParse(row.Cells["colIDPaket"].Value.ToString(), out int idPaket))
                 { selectedPaketId = idPaket; }
                 else { selectedPaketId = -1; ClearInputs(); return; }
 
-                // Isi ComboBox FK
-                cmbDriver.SelectedValue = row.Cells["IDDriver"].Value ?? DBNull.Value;
-                cmbKendaraan.SelectedValue = row.Cells["IDKendaraan"].Value ?? DBNull.Value;
+                // Set ComboBoxes using the hidden ID columns
+                cmbDriver.SelectedValue = row.Cells["colIDDriver_hidden"].Value ?? DBNull.Value;
+                cmbKendaraan.SelectedValue = row.Cells["colIDKendaraan_hidden"].Value ?? DBNull.Value;
 
-                // Isi ComboBox Kategori berdasarkan teks
-                string kategoriValue = row.Cells["Kategori"].Value?.ToString();
-                comboBoxKategori.SelectedItem = kategoriValue; // Cari item yang cocok
-                if (comboBoxKategori.SelectedIndex < 0) // Jika tidak ada yang cocok
-                {
-                    comboBoxKategori.SelectedIndex = 0; // Set ke placeholder
-                    // Optional: Beri tahu user jika data lama aneh
-                    // if (!string.IsNullOrEmpty(kategoriValue))
-                    //    MessageBox.Show($"Kategori '{kategoriValue}' tidak ada dalam pilihan.", "Info Data", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                }
+                // Set Kategori ComboBox
+                string kategoriValue = row.Cells["colKategori"].Value?.ToString();
+                cmbKategori.SelectedItem = kategoriValue; // Use renamed control
+                if (cmbKategori.SelectedIndex < 0) { cmbKategori.SelectedIndex = 0; }
 
-                // Isi TextBox
-                txtNamaPaket.Text = row.Cells["NamaPaket"].Value?.ToString();
-                txtDestinasi.Text = row.Cells["Destinasi"].Value?.ToString();
-                txtHarga.Text = row.Cells["Harga"].Value?.ToString();
-                txtDurasi.Text = row.Cells["Durasi"].Value?.ToString();
-                txtFasilitas.Text = row.Cells["Fasilitas"].Value?.ToString();
-                // Hapus txtKategori.Text = ... ;
-                txtKuota.Text = row.Cells["Kuota"].Value?.ToString();
+                // Set TextBoxes
+                txtNamaPaket.Text = row.Cells["colNamaPaket"].Value?.ToString();
+                txtDestinasi.Text = row.Cells["colDestinasi"].Value?.ToString();
+                txtHarga.Text = row.Cells["colHarga"].Value?.ToString();
+                txtDurasi.Text = row.Cells["colDurasi"].Value?.ToString();
+                txtFasilitas.Text = row.Cells["colFasilitas"].Value?.ToString();
+                txtKuota.Text = row.Cells["colKuota"].Value?.ToString();
 
-                // Isi DateTimePicker
-                object jadwalValue = row.Cells["Jadwal"].Value;
+                // Set DateTimePicker (Use renamed control)
+                object jadwalValue = row.Cells["colJadwal"].Value;
                 if (jadwalValue != null && jadwalValue != DBNull.Value)
                 {
-                    try { dateTimePicker1.Value = (DateTime)jadwalValue; }
-                    catch (Exception) // Tangkap InvalidCast atau ArgumentOutOfRange
-                    {
-                        if (DateTime.TryParse(jadwalValue.ToString(), out DateTime parsedDate))
-                        { dateTimePicker1.Value = parsedDate; }
-                        else { dateTimePicker1.Value = DateTime.Now; } // Default jika parse gagal
-                    }
+                    try { dtpJadwalKeberangkatan.Value = Convert.ToDateTime(jadwalValue); }
+                    catch { dtpJadwalKeberangkatan.Value = DateTime.Now; } // Fallback
                 }
-                else { dateTimePicker1.Value = DateTime.Now; } // Default jika null
+                else { dtpJadwalKeberangkatan.Value = DateTime.Now; }
+
+                errorProvider1.Clear(); // Clear error provider
             }
-            else { ClearInputs(); }
+            else { ClearInputs(); } // Clear if no row selected
         }
 
-        // --- Event handler Load Form ---
-        private void PaketWisata_Load(object sender, EventArgs e)
+        private void DgvPaketWisata_CellClick(object sender, DataGridViewCellEventArgs e)
         {
-            // Tidak perlu lagi jika sudah di constructor
+            // e.RowIndex >= 0 ensures it's not a header click
+            if (e.RowIndex >= 0)
+            {
+                // Select the whole row when a cell is clicked
+                if (!dgvPaketWisata.Rows[e.RowIndex].Selected)
+                {
+                    dgvPaketWisata.ClearSelection();
+                    dgvPaketWisata.Rows[e.RowIndex].Selected = true;
+                }
+                // PopulateFieldsFromSelectedRow is called by SelectionChanged, no need here
+                // PopulateFieldsFromSelectedRow();
+            }
         }
+
+        // Added SelectionChanged handler for robustness
+        private void DgvPaketWisata_SelectionChanged(object sender, EventArgs e)
+        {
+            PopulateFieldsFromSelectedRow();
+        }
+
     }
 }

@@ -1,0 +1,97 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<xs:schema id="LaporanDataSet" targetNamespace="http://tempuri.org/LaporanDataSet.xsd" xmlns:mstns="http://tempuri.org/LaporanDataSet.xsd" xmlns="http://tempuri.org/LaporanDataSet.xsd" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata" xmlns:msprop="urn:schemas-microsoft-com:xml-msprop" attributeFormDefault="qualified" elementFormDefault="qualified">
+  <xs:annotation>
+    <xs:appinfo source="urn:schemas-microsoft-com:xml-msdatasource">
+      <DataSource DefaultConnectionIndex="0" FunctionsComponentName="QueriesTableAdapter" Modifier="AutoLayout, AnsiClass, Class, Public" SchemaSerializationMode="IncludeSchema" xmlns="urn:schemas-microsoft-com:xml-msdatasource">
+        <Connections>
+          <Connection AppSettingsObjectName="Settings" AppSettingsPropertyName="BIROWISATA3ConnectionString" ConnectionStringObject="" IsAppSettingsProperty="true" Modifier="Assembly" Name="BIROWISATA3ConnectionString (Settings)" ParameterPrefix="@" PropertyReference="ApplicationSettings.BiroWisataForm.Properties.Settings.GlobalReference.Default.BIROWISATA3ConnectionString" Provider="System.Data.SqlClient" />
+        </Connections>
+        <Tables>
+          <TableAdapter BaseClass="System.ComponentModel.Component" DataAccessorModifier="AutoLayout, AnsiClass, Class, Public" DataAccessorName="DataTable1TableAdapter" GeneratorDataComponentClassName="DataTable1TableAdapter" Name="DataTable1" UserDataComponentName="DataTable1TableAdapter">
+            <MainSource>
+              <DbSource ConnectionRef="BIROWISATA3ConnectionString (Settings)" DbObjectName="" DbObjectType="Unknown" FillMethodModifier="Public" FillMethodName="Fill" GenerateMethods="Both" GenerateShortCommands="false" GeneratorGetMethodName="GetData" GeneratorSourceName="Fill" GetMethodModifier="Public" GetMethodName="GetData" QueryType="Rowset" ScalarCallRetval="System.Object, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" UseOptimisticConcurrency="true" UserGetMethodName="GetData" UserSourceName="Fill">
+                <SelectCommand>
+                  <DbCommand CommandType="Text" ModifiedByUser="true">
+                    <CommandText>SELECT p.IDPemesanan, p.TanggalPemesanan, pl.NamaPelanggan, pw.NamaPaket, p.TotalPembayaran AS TotalTagihan, ISNULL(SUM(pb.JumlahPembayaran), 0) AS TotalDibayar, p.TotalPembayaran - ISNULL(SUM(pb.JumlahPembayaran), 0) 
+                  AS SisaTagihan, p.StatusPembayaran, p.StatusPemesanan, MAX(pb.TanggalPembayaran) AS TanggalLunas
+FROM     Pemesanan AS p INNER JOIN
+                  Pelanggan AS pl ON p.IDPelanggan = pl.IDPelanggan INNER JOIN
+                  PaketWisata AS pw ON p.IDPaket = pw.IDPaket LEFT OUTER JOIN
+                  Pembayaran AS pb ON p.IDPemesanan = pb.IDPemesanan
+GROUP BY p.IDPemesanan, p.TanggalPemesanan, pl.NamaPelanggan, pw.NamaPaket, p.TotalPembayaran, p.StatusPembayaran, p.StatusPemesanan
+ORDER BY p.TanggalPemesanan DESC</CommandText>
+                    <Parameters />
+                  </DbCommand>
+                </SelectCommand>
+              </DbSource>
+            </MainSource>
+            <Mappings>
+              <Mapping SourceColumn="IDPemesanan" DataSetColumn="IDPemesanan" />
+              <Mapping SourceColumn="TanggalPemesanan" DataSetColumn="TanggalPemesanan" />
+              <Mapping SourceColumn="NamaPelanggan" DataSetColumn="NamaPelanggan" />
+              <Mapping SourceColumn="NamaPaket" DataSetColumn="NamaPaket" />
+              <Mapping SourceColumn="TotalTagihan" DataSetColumn="TotalTagihan" />
+              <Mapping SourceColumn="TotalDibayar" DataSetColumn="TotalDibayar" />
+              <Mapping SourceColumn="SisaTagihan" DataSetColumn="SisaTagihan" />
+              <Mapping SourceColumn="StatusPembayaran" DataSetColumn="StatusPembayaran" />
+              <Mapping SourceColumn="StatusPemesanan" DataSetColumn="StatusPemesanan" />
+              <Mapping SourceColumn="TanggalLunas" DataSetColumn="TanggalLunas" />
+            </Mappings>
+            <Sources />
+          </TableAdapter>
+        </Tables>
+        <Sources />
+      </DataSource>
+    </xs:appinfo>
+  </xs:annotation>
+  <xs:element name="LaporanDataSet" msdata:IsDataSet="true" msdata:UseCurrentLocale="true" msprop:Generator_UserDSName="LaporanDataSet" msprop:EnableTableAdapterManager="true" msprop:Generator_DataSetName="LaporanDataSet">
+    <xs:complexType>
+      <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:element name="DataTable1" msprop:Generator_RowClassName="DataTable1Row" msprop:Generator_RowEvHandlerName="DataTable1RowChangeEventHandler" msprop:Generator_RowDeletedName="DataTable1RowDeleted" msprop:Generator_RowDeletingName="DataTable1RowDeleting" msprop:Generator_RowEvArgName="DataTable1RowChangeEvent" msprop:Generator_TablePropName="DataTable1" msprop:Generator_RowChangedName="DataTable1RowChanged" msprop:Generator_UserTableName="DataTable1" msprop:Generator_RowChangingName="DataTable1RowChanging" msprop:Generator_TableClassName="DataTable1DataTable" msprop:Generator_TableVarName="tableDataTable1">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="IDPemesanan" msdata:ReadOnly="true" msdata:AutoIncrement="true" msdata:AutoIncrementSeed="-1" msdata:AutoIncrementStep="-1" msprop:Generator_UserColumnName="IDPemesanan" msprop:Generator_ColumnPropNameInTable="IDPemesananColumn" msprop:Generator_ColumnPropNameInRow="IDPemesanan" msprop:Generator_ColumnVarNameInTable="columnIDPemesanan" type="xs:int" />
+              <xs:element name="TanggalPemesanan" msprop:Generator_UserColumnName="TanggalPemesanan" msprop:Generator_ColumnPropNameInTable="TanggalPemesananColumn" msprop:Generator_ColumnPropNameInRow="TanggalPemesanan" msprop:Generator_ColumnVarNameInTable="columnTanggalPemesanan" type="xs:dateTime" minOccurs="0" />
+              <xs:element name="NamaPelanggan" msprop:Generator_UserColumnName="NamaPelanggan" msprop:Generator_ColumnPropNameInTable="NamaPelangganColumn" msprop:Generator_ColumnPropNameInRow="NamaPelanggan" msprop:Generator_ColumnVarNameInTable="columnNamaPelanggan" minOccurs="0">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:maxLength value="50" />
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+              <xs:element name="NamaPaket" msprop:Generator_UserColumnName="NamaPaket" msprop:Generator_ColumnPropNameInTable="NamaPaketColumn" msprop:Generator_ColumnPropNameInRow="NamaPaket" msprop:Generator_ColumnVarNameInTable="columnNamaPaket" minOccurs="0">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:maxLength value="50" />
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+              <xs:element name="TotalTagihan" msprop:Generator_UserColumnName="TotalTagihan" msprop:Generator_ColumnPropNameInTable="TotalTagihanColumn" msprop:Generator_ColumnPropNameInRow="TotalTagihan" msprop:Generator_ColumnVarNameInTable="columnTotalTagihan" type="xs:decimal" minOccurs="0" />
+              <xs:element name="TotalDibayar" msdata:ReadOnly="true" msprop:Generator_UserColumnName="TotalDibayar" msprop:Generator_ColumnPropNameInTable="TotalDibayarColumn" msprop:Generator_ColumnPropNameInRow="TotalDibayar" msprop:Generator_ColumnVarNameInTable="columnTotalDibayar" type="xs:decimal" minOccurs="0" />
+              <xs:element name="SisaTagihan" msdata:ReadOnly="true" msprop:Generator_UserColumnName="SisaTagihan" msprop:Generator_ColumnPropNameInTable="SisaTagihanColumn" msprop:Generator_ColumnPropNameInRow="SisaTagihan" msprop:Generator_ColumnVarNameInTable="columnSisaTagihan" type="xs:decimal" minOccurs="0" />
+              <xs:element name="StatusPembayaran" msprop:Generator_UserColumnName="StatusPembayaran" msprop:Generator_ColumnPropNameInTable="StatusPembayaranColumn" msprop:Generator_ColumnPropNameInRow="StatusPembayaran" msprop:Generator_ColumnVarNameInTable="columnStatusPembayaran" minOccurs="0">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:maxLength value="50" />
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+              <xs:element name="StatusPemesanan" msprop:Generator_UserColumnName="StatusPemesanan" msprop:Generator_ColumnPropNameInTable="StatusPemesananColumn" msprop:Generator_ColumnPropNameInRow="StatusPemesanan" msprop:Generator_ColumnVarNameInTable="columnStatusPemesanan" minOccurs="0">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:maxLength value="20" />
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+              <xs:element name="TanggalLunas" msdata:ReadOnly="true" msprop:Generator_UserColumnName="TanggalLunas" msprop:Generator_ColumnPropNameInTable="TanggalLunasColumn" msprop:Generator_ColumnPropNameInRow="TanggalLunas" msprop:Generator_ColumnVarNameInTable="columnTanggalLunas" type="xs:dateTime" minOccurs="0" />
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+      </xs:choice>
+    </xs:complexType>
+    <xs:unique name="Constraint1" msdata:PrimaryKey="true">
+      <xs:selector xpath=".//mstns:DataTable1" />
+      <xs:field xpath="mstns:IDPemesanan" />
+    </xs:unique>
+  </xs:element>
+</xs:schema>
