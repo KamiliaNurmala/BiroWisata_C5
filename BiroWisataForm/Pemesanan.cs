@@ -22,22 +22,14 @@ namespace BiroWisataForm
         {
             connectionString = kn.connectionString();
 
-            InitializeComponent(); // Designer initializes controls and DGV columns structure
-            InitializeDataGridViewSettings(); // Set additional runtime DGV properties
-            InitializeSearchBox();
+            InitializeComponent();
+            InitializeDataGridViewSettings();
+            InitializeSearchBox(); // Sekarang tanpa timer
             EnsureDatabaseIndexes();
             LoadPelanggan();
             LoadPaketWisata();
             LoadStatusPembayaran();
             LoadStatusPemesananOptions();
-            // RefreshData called in Load event
-
-            // --- TAMBAHKAN BLOK KODE DI BAWAH INI ---
-            // Inisialisasi Timer untuk pencarian
-            searchTimer = new Timer();
-            searchTimer.Interval = 400; // Jeda 400 milidetik sebelum mencari
-            searchTimer.Tick += SearchTimer_Tick; // Hubungkan timer ke metode SearchTimer_Tick
-                                                  // ----------------------------------------
         }
 
 
@@ -112,20 +104,24 @@ namespace BiroWisataForm
         {
             this.txtSearch.TextChanged += (s, e) =>
             {
-                // Setiap kali user mengetik, hentikan timer yang sedang berjalan (jika ada)
-                searchTimer.Stop();
-                // dan mulai lagi dari awal. Pencarian baru akan terjadi setelah user berhenti mengetik.
-                searchTimer.Start();
+                // Simpan posisi cursor sebelum search
+                int cursorPosition = txtSearch.SelectionStart;
+
+                PerformSearch();
+
+                // Kembalikan focus dan posisi cursor setelah search
+                if (!txtSearch.Focused)
+                {
+                    txtSearch.Focus();
+                }
+                txtSearch.SelectionStart = cursorPosition;
+                txtSearch.SelectionLength = 0;
             };
         }
 
         // TAMBAHKAN metode BARU ini di mana saja di dalam kelas Pemesanan
-        private void SearchTimer_Tick(object sender, EventArgs e)
+        private void PerformSearch()
         {
-            // Pertama, hentikan timer agar tidak berjalan berulang kali tanpa henti
-            searchTimer.Stop();
-
-            // Logika filter yang sebelumnya ada di TextChanged sekarang pindah ke sini
             if (dgvPemesanan.DataSource is DataTable dt)
             {
                 try
@@ -133,13 +129,21 @@ namespace BiroWisataForm
                     string filterText = this.txtSearch.Text.Trim()
                         .Replace("'", "''").Replace("%", "[%]").Replace("_", "[_]");
 
-                    // Query filter ini tetap sama seperti sebelumnya
-                    dt.DefaultView.RowFilter = string.Format(
-                        "NamaPelanggan LIKE '%{0}%' OR " +
-                        "NamaPaket LIKE '%{0}%' OR " +
-                        "StatusPembayaran LIKE '%{0}%' OR " +
-                        "CONVERT(TotalPembayaran, 'System.String') LIKE '%{0}%'",
-                        filterText);
+                    if (string.IsNullOrWhiteSpace(filterText))
+                    {
+                        dt.DefaultView.RowFilter = string.Empty;
+                    }
+                    else
+                    {
+                        dt.DefaultView.RowFilter = string.Format(
+                            "NamaPelanggan LIKE '%{0}%' OR " +
+                            "NamaPaket LIKE '%{0}%' OR " +
+                            "StatusPembayaran LIKE '%{0}%' OR " +
+                            "StatusPemesanan LIKE '%{0}%' OR " +
+                            "CONVERT(TotalPembayaran, 'System.String') LIKE '%{0}%' OR " +
+                            "CONVERT(TanggalPemesanan, 'System.String') LIKE '%{0}%'",
+                            filterText);
+                    }
                 }
                 catch (Exception ex)
                 {
