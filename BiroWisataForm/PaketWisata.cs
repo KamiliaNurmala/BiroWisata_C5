@@ -132,7 +132,7 @@ namespace BiroWisataForm
 
         private void LoadDrivers()
         {
-            using (var conn = new SqlConnection(connectionString))
+            using (var conn = new SqlConnection(kn.connectionString()))
             {
                 try
                 {
@@ -158,7 +158,7 @@ namespace BiroWisataForm
 
         private void LoadKendaraan()
         {
-            using (var conn = new SqlConnection(connectionString))
+            using (var conn = new SqlConnection(kn.connectionString()))
             {
                 try
                 {
@@ -183,28 +183,34 @@ namespace BiroWisataForm
             }
         }
 
+        // GANTI METODE INI DI FILE PaketWisata.cs
         private bool RefreshData(string searchTerm = null)
         {
-            using (var conn = new SqlConnection(connectionString))
+            using (var conn = new SqlConnection(kn.connectionString()))
             {
                 try
                 {
                     conn.Open();
                     string query = @"
-            SELECT
-                p.IDPaket, p.NamaPaket, p.Destinasi, p.Harga, p.Durasi,
-                p.Fasilitas, p.Kategori, p.Kuota, p.JadwalKeberangkatan,
-                p.IDDriver, d.NamaDriver,
-                p.IDKendaraan, k.Jenis + ' - ' + k.PlatNomor AS KendaraanInfo,
-                p.CreatedAt, p.UpdatedAt, p.CreatedBy, p.UpdatedBy
-            FROM PaketWisata p
-            INNER JOIN Driver d ON p.IDDriver = d.IDDriver
-            INNER JOIN Kendaraan k ON p.IDKendaraan = k.IDKendaraan
-            WHERE p.IsDeleted = 0";
+        SELECT
+            p.IDPaket, p.NamaPaket, p.Destinasi, p.Harga, p.Durasi,
+            p.Fasilitas, p.Kategori, p.Kuota, p.JadwalKeberangkatan,
+            p.IDDriver, d.NamaDriver,
+            p.IDKendaraan, k.Jenis + ' - ' + k.PlatNomor AS KendaraanInfo,
+            p.CreatedAt, p.UpdatedAt, p.CreatedBy, p.UpdatedBy
+        FROM PaketWisata p
+        INNER JOIN Driver d ON p.IDDriver = d.IDDriver
+        INNER JOIN Kendaraan k ON p.IDKendaraan = k.IDKendaraan
+        WHERE p.IsDeleted = 0";
 
                     if (!string.IsNullOrWhiteSpace(searchTerm))
                     {
-                        query += " AND (p.NamaPaket LIKE @SearchTerm OR p.Destinasi LIKE @SearchTerm OR p.Kategori LIKE @SearchTerm OR d.NamaDriver LIKE @SearchTerm)";
+                        // --- PERUBAHAN DIMULAI DI SINI ---
+                        // Menambahkan kondisi pencarian untuk kolom Harga.
+                        // CAST(p.Harga AS VARCHAR(50)) mengubah nilai numerik Harga menjadi teks
+                        // agar bisa dicari menggunakan LIKE.
+                        query += " AND (p.NamaPaket LIKE @SearchTerm OR p.Destinasi LIKE @SearchTerm OR p.Kategori LIKE @SearchTerm OR d.NamaDriver LIKE @SearchTerm OR CAST(p.Harga AS VARCHAR(50)) LIKE @SearchTerm)";
+                        // --- AKHIR PERUBAHAN ---
                     }
 
                     var dt = new DataTable();
@@ -220,7 +226,6 @@ namespace BiroWisataForm
                     dgvPaketWisata.DataSource = null;
                     dgvPaketWisata.DataSource = dt;
 
-                    // ClearInputs(); // <-- HAPUS ATAU BERI KOMENTAR BARIS INI
                     return true;
                 }
                 catch (SqlException ex)
@@ -249,7 +254,7 @@ namespace BiroWisataForm
             short.TryParse(txtDurasi.Text.Trim(), out short durasi);
             short.TryParse(txtKuota.Text.Trim(), out short kuota);
 
-            SqlConnection conn = new SqlConnection(connectionString);
+            SqlConnection conn = new SqlConnection(kn.connectionString());
             SqlTransaction transaction = null;
 
             try
@@ -334,7 +339,7 @@ namespace BiroWisataForm
             short.TryParse(txtKuota.Text.Trim(), out short kuota);
 
             // --- LOGIKA TRANSAKSI DIMULAI DI SINI ---
-            SqlConnection conn = new SqlConnection(connectionString);
+            SqlConnection conn = new SqlConnection(kn.connectionString());
             SqlTransaction transaction = null;
 
             try
@@ -419,7 +424,7 @@ namespace BiroWisataForm
             // LOGIKA TRANSAKSI DIMULAI DI SINI
             // =================================================================
 
-            SqlConnection conn = new SqlConnection(connectionString);
+            SqlConnection conn = new SqlConnection(kn.connectionString());
             SqlTransaction transaction = null;
 
             try
@@ -681,6 +686,11 @@ namespace BiroWisataForm
         }
 
         private void txtKuota_TextChanged(object sender, EventArgs e)
+        {
+
+        }
+
+        private void txtSearch_TextChanged(object sender, EventArgs e)
         {
 
         }

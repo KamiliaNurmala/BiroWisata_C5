@@ -30,6 +30,103 @@ namespace BiroWisataForm
         }
 
 
+
+
+        /// <summary>
+        /// Memeriksa apakah ada data operasional duplikat berdasarkan kombinasi kunci.
+        /// </summary>
+        /// <param name="idPaket">ID Paket Wisata yang dipilih.</param>
+        /// <param name="idDriver">ID Driver yang dipilih.</param>
+        /// <param name="idKendaraan">ID Kendaraan yang dipilih.</param>
+        /// <param name="jenisPengeluaran">Jenis pengeluaran yang dipilih.</param>
+        /// <param name="currentOperasionalId">ID operasional saat ini (digunakan saat update untuk mengecualikan data itu sendiri dari pengecekan).</param>
+        /// <returns>True jika duplikat ditemukan, False jika tidak.</returns>
+        private bool CheckForDuplicate(int idPaket, int idDriver, int idKendaraan, string jenisPengeluaran, int currentOperasionalId = -1)
+        {
+            using (var conn = new SqlConnection(kn.connectionString()))
+            {
+                try
+                {
+                    conn.Open();
+                    // Query ini menghitung jumlah record yang cocok dengan kombinasi input,
+                    // dan mengabaikan ID data yang sedang diedit (jika ada).
+                    string query = @"
+                SELECT COUNT(1) 
+                FROM Operasional 
+                WHERE IDPaket = @IDPaket 
+                  AND IDDriver = @IDDriver 
+                  AND IDKendaraan = @IDKendaraan 
+                  AND JenisPengeluaran = @JenisPengeluaran
+                  AND IDOperasional <> @IDOperasional"; // <> artinya "tidak sama dengan"
+
+                    using (var cmd = new SqlCommand(query, conn))
+                    {
+                        cmd.Parameters.AddWithValue("@IDPaket", idPaket);
+                        cmd.Parameters.AddWithValue("@IDDriver", idDriver);
+                        cmd.Parameters.AddWithValue("@IDKendaraan", idKendaraan);
+                        cmd.Parameters.AddWithValue("@JenisPengeluaran", jenisPengeluaran);
+                        cmd.Parameters.AddWithValue("@IDOperasional", currentOperasionalId);
+
+                        // ExecuteScalar() sangat efisien untuk mendapatkan satu nilai tunggal (dalam hal ini, jumlah data).
+                        int count = Convert.ToInt32(cmd.ExecuteScalar());
+
+                        // Jika hitungan lebih dari 0, berarti ada duplikat.
+                        return count > 0;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    HandleGeneralError("memeriksa duplikasi data", ex);
+                    // Jika terjadi error saat pengecekan, kita anggap ada duplikat untuk mencegah kesalahan.
+                    return true;
+                }
+            }
+        }
+
+
+        /// <summary>
+        /// Memeriksa apakah sebuah kendaraan sudah ditugaskan ke driver yang berbeda di data operasional lain.
+        /// </summary>
+        /// <param name="idKendaraan">ID Kendaraan yang akan diperiksa.</param>
+        /// <param name="idDriver">ID Driver yang akan ditugaskan.</param>
+        /// <param name="currentOperasionalId">ID operasional saat ini (untuk mode Ubah).</param>
+        /// <returns>True jika kendaraan sudah digunakan driver lain, False jika belum.</returns>
+        private bool IsKendaraanAssignedToDifferentDriver(int idKendaraan, int idDriver, int currentOperasionalId = -1)
+        {
+            using (var conn = new SqlConnection(kn.connectionString()))
+            {
+                try
+                {
+                    conn.Open();
+                    // Query untuk mencari apakah kendaraan ini sudah dipakai oleh driver lain
+                    // pada data operasional yang BUKAN yang sedang kita edit.
+                    string query = @"
+                SELECT COUNT(1) 
+                FROM Operasional 
+                WHERE IDKendaraan = @IDKendaraan 
+                  AND IDDriver <> @IDDriver 
+                  AND IDOperasional <> @IDOperasional";
+
+                    using (var cmd = new SqlCommand(query, conn))
+                    {
+                        cmd.Parameters.AddWithValue("@IDKendaraan", idKendaraan);
+                        cmd.Parameters.AddWithValue("@IDDriver", idDriver);
+                        cmd.Parameters.AddWithValue("@IDOperasional", currentOperasionalId);
+
+                        int count = Convert.ToInt32(cmd.ExecuteScalar());
+                        return count > 0;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    HandleGeneralError("memeriksa tugas kendaraan", ex);
+                    // Gagal aman, anggap ada konflik untuk mencegah data tidak konsisten.
+                    return true;
+                }
+            }
+        }
+
+
         private void EnsureDatabaseIndexes()
         {
             // Menggabungkan semua skrip CREATE INDEX untuk tabel Operasional
@@ -105,7 +202,7 @@ namespace BiroWisataForm
         // PERBAIKAN BUG PENTING DI SINI
         private void LoadComboBoxData(ComboBox comboBox, string query, string displayMember, string valueMember, string placeholder)
         {
-            using (var conn = new SqlConnection(connectionString))
+            using (var conn = new SqlConnection(kn.connectionString()))
             {
                 try
                 {
@@ -147,9 +244,10 @@ namespace BiroWisataForm
         }
 
         // DIUBAH menjadi bool
+        // GANTI metode RefreshData Anda dengan yang ini
         private bool RefreshData(string searchTerm = null)
         {
-            using (var conn = new SqlConnection(connectionString))
+            using (var conn = new SqlConnection(kn.connectionString()))
             {
                 try
                 {
@@ -166,16 +264,20 @@ namespace BiroWisataForm
                     string whereClause = "";
                     if (!string.IsNullOrWhiteSpace(searchTerm))
                     {
-                        whereClause = " WHERE p.NamaPaket LIKE @SearchTerm OR d.NamaDriver LIKE @SearchTerm OR (k.Jenis + ' (' + k.PlatNomor + ')') LIKE @SearchTerm OR o.JenisPengeluaran LIKE @SearchTerm";
+                        // --- PERUBAHAN UTAMA DI SINI ---
+                        // Menambahkan pencarian berdasarkan BiayaOperasional
+                        whereClause = @" WHERE p.NamaPaket LIKE @SearchTerm 
+                                 OR d.NamaDriver LIKE @SearchTerm 
+                                 OR (k.Jenis + ' (' + k.PlatNomor + ')') LIKE @SearchTerm 
+                                 OR o.JenisPengeluaran LIKE @SearchTerm
+                                 OR CAST(o.BiayaBBM AS VARCHAR(20)) LIKE @SearchTerm"; // <-- BARIS INI DITAMBAHKAN
+                                                                                       // --- AKHIR PERUBAHAN ---
                     }
                     query += whereClause;
 
-                    // --- PERUBAHAN UTAMA DI SINI ---
-                    // Logika pengurutan baru: Prioritaskan hasil pencarian
                     string orderByClause;
                     if (!string.IsNullOrWhiteSpace(searchTerm))
                     {
-                        // Jika sedang mencari, urutkan berdasarkan relevansi, lalu ID
                         orderByClause = @" ORDER BY 
                                     CASE 
                                         WHEN p.NamaPaket LIKE @SearchTerm THEN 1
@@ -186,11 +288,9 @@ namespace BiroWisataForm
                     }
                     else
                     {
-                        // Jika tidak mencari, urutkan seperti biasa
                         orderByClause = " ORDER BY o.IDOperasional DESC";
                     }
                     query += orderByClause;
-                    // --- AKHIR PERUBAHAN ---
 
                     var dt = new DataTable();
                     var adapter = new SqlDataAdapter(query, conn);
@@ -203,12 +303,14 @@ namespace BiroWisataForm
                     adapter.Fill(dt);
                     dgvOperasional.DataSource = dt;
 
+                    // Logika ini sudah benar, akan mengisi form jika hanya ada 1 hasil
                     if (dgvOperasional.Rows.Count == 1)
                     {
                         dgvOperasional.Rows[0].Selected = true;
                     }
                     else
                     {
+                        // Jika hasil lebih dari 1 atau 0, bersihkan input
                         ClearInputs();
                     }
 
@@ -226,32 +328,62 @@ namespace BiroWisataForm
         {
             if (!ValidateInputs(out decimal biaya)) return;
 
-            using (var conn = new SqlConnection(connectionString))
+            int idPaket = Convert.ToInt32(cmbPaket.SelectedValue);
+            int idDriver = Convert.ToInt32(cmbDriver.SelectedValue);
+            int idKendaraan = Convert.ToInt32(cmbKendaraan.SelectedValue);
+            string jenis = cmbJenisPengeluaran.SelectedItem.ToString();
+
+            // Pengecekan aturan bisnis tetap di luar transaksi untuk efisiensi
+            if (IsKendaraanAssignedToDifferentDriver(idKendaraan, idDriver))
             {
+                MessageBox.Show("Kendaraan ini sudah ditugaskan untuk driver lain. Satu kendaraan hanya boleh dipegang oleh satu driver.", "Aturan Bisnis Dilanggar", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            if (CheckForDuplicate(idPaket, idDriver, idKendaraan, jenis))
+            {
+                MessageBox.Show("Data operasional dengan kombinasi Paket, Driver, Kendaraan, dan Jenis Pengeluaran yang sama sudah ada.", "Data Duplikat", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            // --- PERUBAHAN DIMULAI DI SINI ---
+            using (var conn = new SqlConnection(kn.connectionString()))
+            {
+                conn.Open();
+                // 1. Memulai transaksi
+                SqlTransaction transaction = conn.BeginTransaction();
+
                 try
                 {
-                    conn.Open();
                     using (var cmd = new SqlCommand("sp_AddOperasional", conn))
                     {
                         cmd.CommandType = CommandType.StoredProcedure;
+                        // 2. Mengaitkan command dengan transaksi
+                        cmd.Transaction = transaction;
+
                         cmd.Parameters.AddWithValue("@IDPaket", cmbPaket.SelectedValue);
                         cmd.Parameters.AddWithValue("@IDDriver", cmbDriver.SelectedValue);
                         cmd.Parameters.AddWithValue("@IDKendaraan", cmbKendaraan.SelectedValue);
-                        // Pastikan nama parameter @BiayaOperasional sesuai dengan di Stored Procedure Anda
-                        // Jika di SP namanya @BiayaBBM, ganti di sini.
                         cmd.Parameters.AddWithValue("@BiayaOperasional", biaya);
                         cmd.Parameters.AddWithValue("@JenisPengeluaran", cmbJenisPengeluaran.SelectedItem.ToString());
 
-                        // --- PERUBAHAN DI SINI ---
-                        cmd.ExecuteNonQuery(); // Hapus IF 
-                        MessageBox.Show("Data operasional berhasil ditambahkan.", "Sukses", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                        RefreshData(); // RefreshData akan memanggil ClearInputs()
-                        // -------------------------
+                        cmd.ExecuteNonQuery();
                     }
+
+                    // 3. Jika semua berhasil, commit transaksi
+                    transaction.Commit();
+                    MessageBox.Show("Data operasional berhasil ditambahkan.", "Sukses", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    RefreshData();
                 }
-                catch (SqlException ex) { HandleSqlError(ex, "menambahkan data"); }
-                catch (Exception ex) { HandleGeneralError("menambahkan data", ex); }
+                catch (Exception ex)
+                {
+                    // 4. Jika terjadi error, batalkan semua perubahan (rollback)
+                    transaction.Rollback();
+                    // Menampilkan pesan error yang lebih spesifik
+                    HandleGeneralError("menambahkan data (transaksi dibatalkan)", ex);
+                }
             }
+            // --- AKHIR PERUBAHAN ---
         }
 
         private void btnUbah_Click(object sender, EventArgs e)
@@ -259,32 +391,62 @@ namespace BiroWisataForm
             if (selectedOperasionalId < 0) { MessageBox.Show("Pilih data yang akan diubah.", "Peringatan", MessageBoxButtons.OK, MessageBoxIcon.Warning); return; }
             if (!ValidateInputs(out decimal biaya)) return;
 
-            using (var conn = new SqlConnection(connectionString))
+            int idPaket = Convert.ToInt32(cmbPaket.SelectedValue);
+            int idDriver = Convert.ToInt32(cmbDriver.SelectedValue);
+            int idKendaraan = Convert.ToInt32(cmbKendaraan.SelectedValue);
+            string jenis = cmbJenisPengeluaran.SelectedItem.ToString();
+
+            if (IsKendaraanAssignedToDifferentDriver(idKendaraan, idDriver, selectedOperasionalId))
             {
+                MessageBox.Show("Kendaraan ini sudah ditugaskan untuk driver lain. Satu kendaraan hanya boleh dipegang oleh satu driver.", "Aturan Bisnis Dilanggar", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            if (CheckForDuplicate(idPaket, idDriver, idKendaraan, jenis, selectedOperasionalId))
+            {
+                MessageBox.Show("Kombinasi Paket, Driver, Kendaraan, dan Jenis Pengeluaran ini sudah digunakan oleh data lain.", "Data Duplikat", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            // --- PERUBAHAN DIMULAI DI SINI ---
+            using (var conn = new SqlConnection(kn.connectionString()))
+            {
+                conn.Open();
+                // 1. Memulai transaksi
+                SqlTransaction transaction = conn.BeginTransaction();
+
                 try
                 {
-                    conn.Open();
                     using (var cmd = new SqlCommand("sp_UpdateOperasional", conn))
                     {
                         cmd.CommandType = CommandType.StoredProcedure;
+                        // 2. Mengaitkan command dengan transaksi
+                        cmd.Transaction = transaction;
+
                         cmd.Parameters.AddWithValue("@IDOperasional", selectedOperasionalId);
                         cmd.Parameters.AddWithValue("@IDPaket", cmbPaket.SelectedValue);
                         cmd.Parameters.AddWithValue("@IDDriver", cmbDriver.SelectedValue);
                         cmd.Parameters.AddWithValue("@IDKendaraan", cmbKendaraan.SelectedValue);
-                        // Pastikan nama parameter @BiayaOperasional sesuai dengan di Stored Procedure Anda
                         cmd.Parameters.AddWithValue("@BiayaOperasional", biaya);
                         cmd.Parameters.AddWithValue("@JenisPengeluaran", cmbJenisPengeluaran.SelectedItem.ToString());
 
-                        // --- PERUBAHAN DI SINI: Hapus IF dan ELSE ---
                         cmd.ExecuteNonQuery();
-                        MessageBox.Show("Data operasional berhasil diubah.", "Sukses", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                        RefreshData(); // RefreshData akan memanggil ClearInputs()
-                                       // ----------------------------------------------
                     }
+
+                    // 3. Jika semua berhasil, commit transaksi
+                    transaction.Commit();
+                    MessageBox.Show("Data operasional berhasil diubah.", "Sukses", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    RefreshData();
                 }
-                catch (SqlException ex) { HandleSqlError(ex, "mengubah data"); }
-                catch (Exception ex) { HandleGeneralError("mengubah data", ex); }
+                catch (Exception ex)
+                {
+                    // 4. Jika terjadi error, batalkan semua perubahan (rollback)
+                    transaction.Rollback();
+                    // Menampilkan pesan error yang lebih spesifik
+                    HandleGeneralError("mengubah data (transaksi dibatalkan)", ex);
+                }
             }
+            // --- AKHIR PERUBAHAN ---
         }
 
         private void btnHapus_Click(object sender, EventArgs e)
@@ -293,7 +455,7 @@ namespace BiroWisataForm
 
             if (MessageBox.Show("Yakin ingin menghapus data ini?", "Konfirmasi Hapus", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
             {
-                using (var conn = new SqlConnection(connectionString))
+                using (var conn = new SqlConnection(kn.connectionString()))
                 {
                     try
                     {
@@ -443,6 +605,12 @@ namespace BiroWisataForm
             // Perintah ini akan menutup form 'Kendaraan' saat ini,
             // dan mengembalikan kontrol ke form yang membukanya (yaitu MenuAdmin).
             this.Close();
+        }
+
+        private void txtCari_TextChanged(object sender, EventArgs e)
+        {
+            // Panggil metode RefreshData dengan teks dari kotak pencarian
+            RefreshData(txtCari.Text);
         }
     }
 }

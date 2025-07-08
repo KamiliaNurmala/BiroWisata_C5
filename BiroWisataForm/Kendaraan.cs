@@ -287,7 +287,7 @@ namespace BiroWisataForm
             {
                 MessageBox.Show("Harap perbaiki kesalahan input sebelum menyimpan.", "Validasi Gagal",
                     MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                return; // Hentikan eksekusi jika validasi dasar gagal
+                return;
             }
 
             // 2. Lakukan pengecekan duplikasi Plat Nomor
@@ -297,12 +297,10 @@ namespace BiroWisataForm
                 MessageBox.Show("Plat nomor yang sama sudah terdaftar. Silakan gunakan plat nomor yang lain.",
                                 "Duplikasi Data", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 errorProvider1.SetError(txtPlatNomor, "Plat nomor ini sudah ada.");
-                return; // Hentikan eksekusi jika plat nomor sudah ada
+                return;
             }
 
             // 3. Siapkan data lainnya
-            // Parsing kapasitas, validasi ini sebenarnya sudah ada di ValidateInput, 
-            // namun kita lakukan lagi untuk keamanan dan untuk mendapatkan nilai 'kapasitasVal'.
             if (!short.TryParse(txtKapasitas.Text, out short kapasitasVal) || kapasitasVal <= 0)
             {
                 errorProvider1.SetError(txtKapasitas, "Kapasitas harus berupa angka positif yang valid.");
@@ -311,43 +309,52 @@ namespace BiroWisataForm
             }
             string status = (this.Controls.Find("cmbStatus", true).FirstOrDefault() as ComboBox)?.SelectedItem.ToString() ?? "Aktif";
 
-
-            // 4. Proses penyimpanan data ke database
+            // 4. Proses penyimpanan data ke database dengan transaksi
             using (SqlConnection conn = new SqlConnection(kn.connectionString()))
             {
+                conn.Open();
+                // --- PERUBAHAN DIMULAI DI SINI ---
+                SqlTransaction transaction = conn.BeginTransaction(); // 1. Memulai transaksi
+
                 try
                 {
-                    conn.Open();
-                    // Menggunakan Stored Procedure 'sp_AddKendaraan'
-                    using (SqlCommand cmd = new SqlCommand("sp_AddKendaraan", conn))
+                    using (SqlCommand cmd = new SqlCommand("sp_AddKendaraan", conn, transaction)) // 2. Kaitkan command dengan transaksi
                     {
                         cmd.CommandType = CommandType.StoredProcedure;
 
-                        // Tambahkan parameter ke Stored Procedure
                         cmd.Parameters.AddWithValue("@Jenis", txtJenis.Text.Trim());
-                        cmd.Parameters.AddWithValue("@PlatNomor", platNomor); // Gunakan variabel yang sudah di-trim
+                        cmd.Parameters.AddWithValue("@PlatNomor", platNomor);
                         cmd.Parameters.AddWithValue("@Kapasitas", kapasitasVal);
                         cmd.Parameters.AddWithValue("@Status", status);
-                        cmd.Parameters.AddWithValue("@CreatedBy", Environment.UserName); // Mencatat siapa yang membuat data
+                        cmd.Parameters.AddWithValue("@CreatedBy", Environment.UserName);
 
-                        cmd.ExecuteNonQuery(); // Eksekusi perintah
+                        cmd.ExecuteNonQuery();
+                    }
 
-                        MessageBox.Show("Data kendaraan berhasil ditambahkan!", "Sukses",
-                            MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    transaction.Commit(); // 3. Commit transaksi jika semua berhasil
 
-                        RefreshData(); // Muat ulang data di tabel untuk menampilkan data baru
+                    MessageBox.Show("Data kendaraan berhasil ditambahkan!", "Sukses",
+                        MessageBoxButtons.OK, MessageBoxIcon.Information);
+
+                    RefreshData();
+                }
+                catch (Exception ex)
+                {
+                    transaction.Rollback(); // 4. Rollback transaksi jika terjadi kesalahan
+
+                    // Tampilkan pesan error
+                    if (ex is SqlException sqlEx)
+                    {
+                        MessageBox.Show($"Error Database saat menambahkan data: {sqlEx.Message}\nNomor Kesalahan: {sqlEx.Number}", "Database Error",
+                            MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    }
+                    else
+                    {
+                        MessageBox.Show($"Error saat menambahkan data: {ex.Message}", "Error Umum",
+                            MessageBoxButtons.OK, MessageBoxIcon.Error);
                     }
                 }
-                catch (SqlException ex) // Menangkap error spesifik dari SQL Server
-                {
-                    MessageBox.Show($"Error Database saat menambahkan data: {ex.Message}\nNomor Kesalahan: {ex.Number}", "Database Error",
-                        MessageBoxButtons.OK, MessageBoxIcon.Error);
-                }
-                catch (Exception ex) // Menangkap error umum lainnya
-                {
-                    MessageBox.Show($"Error saat menambahkan data: {ex.Message}", "Error Umum",
-                        MessageBoxButtons.OK, MessageBoxIcon.Error);
-                }
+                // --- AKHIR PERUBAHAN ---
             }
         }
 
@@ -405,34 +412,33 @@ namespace BiroWisataForm
 
         private void btnUbah_Click(object sender, EventArgs e)
         {
-            // 1. Pastikan ada baris data yang dipilih di tabel
+            // 1. Pastikan ada baris data yang dipilih
             if (dgvKendaraan.SelectedRows.Count == 0)
             {
                 MessageBox.Show("Pilih kendaraan yang akan diubah.", "Peringatan",
                     MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                return; // Hentikan jika tidak ada yang dipilih
+                return;
             }
 
-            // 2. Lakukan validasi input pada form
+            // 2. Lakukan validasi input
             if (!ValidateInput())
             {
                 MessageBox.Show("Harap perbaiki kesalahan input sebelum menyimpan.", "Validasi Gagal",
                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                return; // Hentikan jika validasi gagal
+                return;
             }
 
             // 3. Ambil ID dari baris yang dipilih dan data dari form
             int selectedId = Convert.ToInt32(dgvKendaraan.SelectedRows[0].Cells["colIDKendaraan"].Value);
             string platNomor = txtPlatNomor.Text.Trim();
 
-            // 4. Cek duplikasi plat nomor, tapi KECUALIKAN data yang sedang kita edit.
-            // Ini penting agar plat nomor yang tidak diubah tidak dianggap duplikat.
+            // 4. Cek duplikasi plat nomor (kecuali data itu sendiri)
             if (ApakahPlatNomorSudahAda(platNomor, selectedId))
             {
-                MessageBox.Show("Plat nomor yang sama sudah terdaftar untuk kendaraan lain. Silakan gunakan plat nomor yang lain.",
+                MessageBox.Show("Plat nomor yang sama sudah terdaftar untuk kendaraan lain.",
                                 "Duplikasi Data", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 errorProvider1.SetError(txtPlatNomor, "Plat nomor ini sudah digunakan kendaraan lain.");
-                return; // Hentikan jika duplikat ditemukan pada kendaraan lain
+                return;
             }
 
             // 5. Siapkan data lainnya
@@ -445,46 +451,56 @@ namespace BiroWisataForm
             }
             string status = (this.Controls.Find("cmbStatus", true).FirstOrDefault() as ComboBox)?.SelectedItem.ToString() ?? "Aktif";
 
-            // 6. Jalankan proses update ke database
+            // 6. Jalankan proses update ke database dengan transaksi
             using (SqlConnection conn = new SqlConnection(kn.connectionString()))
             {
+                conn.Open();
+                // --- PERUBAHAN DIMULAI DI SINI ---
+                SqlTransaction transaction = conn.BeginTransaction(); // 1. Memulai transaksi
+
                 try
                 {
-                    conn.Open();
-                    // Menggunakan Stored Procedure 'sp_UpdateKendaraan'
-                    using (SqlCommand cmd = new SqlCommand("sp_UpdateKendaraan", conn))
+                    using (SqlCommand cmd = new SqlCommand("sp_UpdateKendaraan", conn, transaction)) // 2. Kaitkan command dengan transaksi
                     {
                         cmd.CommandType = CommandType.StoredProcedure;
 
-                        // Tambahkan semua parameter, yang paling penting adalah @IDKendaraan
-                        // untuk memastikan baris yang benar yang di-update.
                         cmd.Parameters.AddWithValue("@IDKendaraan", selectedId);
                         cmd.Parameters.AddWithValue("@Jenis", txtJenis.Text.Trim());
                         cmd.Parameters.AddWithValue("@PlatNomor", platNomor);
                         cmd.Parameters.AddWithValue("@Kapasitas", kapasitasVal);
                         cmd.Parameters.AddWithValue("@Status", status);
-                        cmd.Parameters.AddWithValue("@UpdatedBy", Environment.UserName); // Mencatat siapa yang mengubah data
+                        cmd.Parameters.AddWithValue("@UpdatedBy", Environment.UserName);
 
-                        cmd.ExecuteNonQuery(); // Eksekusi perintah update
+                        cmd.ExecuteNonQuery();
+                    }
 
-                        MessageBox.Show("Data kendaraan berhasil diubah.", "Sukses",
-                            MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    transaction.Commit(); // 3. Commit transaksi jika berhasil
 
-                        RefreshData(); // Muat ulang data untuk menampilkan perubahan
+                    MessageBox.Show("Data kendaraan berhasil diubah.", "Sukses",
+                        MessageBoxButtons.OK, MessageBoxIcon.Information);
+
+                    RefreshData();
+                }
+                catch (Exception ex)
+                {
+                    transaction.Rollback(); // 4. Rollback transaksi jika terjadi kesalahan
+
+                    // Tampilkan pesan error
+                    if (ex is SqlException sqlEx)
+                    {
+                        MessageBox.Show($"Error Database saat mengubah data: {sqlEx.Message}\nNomor Kesalahan: {sqlEx.Number}", "Database Error",
+                            MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    }
+                    else
+                    {
+                        MessageBox.Show($"Error saat mengubah data: {ex.Message}", "Error Umum",
+                            MessageBoxButtons.OK, MessageBoxIcon.Error);
                     }
                 }
-                catch (SqlException ex) // Tangkap error spesifik dari SQL
-                {
-                    MessageBox.Show($"Error Database saat mengubah data: {ex.Message}\nNomor Kesalahan: {ex.Number}", "Database Error",
-                        MessageBoxButtons.OK, MessageBoxIcon.Error);
-                }
-                catch (Exception ex) // Tangkap error umum lainnya
-                {
-                    MessageBox.Show($"Error saat mengubah data: {ex.Message}", "Error Umum",
-                        MessageBoxButtons.OK, MessageBoxIcon.Error);
-                }
+                // --- AKHIR PERUBAHAN ---
             }
         }
+
 
         private void btnRefresh_Click(object sender, EventArgs e)
         {

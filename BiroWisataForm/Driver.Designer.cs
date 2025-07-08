@@ -43,8 +43,8 @@ namespace BiroWisataForm
         /// </summary>
         private void InitializeComponent()
         {
-            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle3 = new System.Windows.Forms.DataGridViewCellStyle();
-            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle4 = new System.Windows.Forms.DataGridViewCellStyle();
+            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle5 = new System.Windows.Forms.DataGridViewCellStyle();
+            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle6 = new System.Windows.Forms.DataGridViewCellStyle();
             this.lblNamaDriver = new System.Windows.Forms.Label();
             this.lblNoTel = new System.Windows.Forms.Label();
             this.lblNoSIM = new System.Windows.Forms.Label();
@@ -60,6 +60,8 @@ namespace BiroWisataForm
             this.lblStatus = new System.Windows.Forms.Label();
             this.cmbStatus = new System.Windows.Forms.ComboBox();
             this.btnKembali = new System.Windows.Forms.Button();
+            this.lblSearch = new System.Windows.Forms.Label();
+            this.textBox1 = new System.Windows.Forms.TextBox();
             ((System.ComponentModel.ISupportInitialize)(this.dgvDriver)).BeginInit();
             this.inputPanel.SuspendLayout();
             this.SuspendLayout();
@@ -159,25 +161,25 @@ namespace BiroWisataForm
             this.dgvDriver.AutoSizeColumnsMode = System.Windows.Forms.DataGridViewAutoSizeColumnsMode.Fill;
             this.dgvDriver.BackgroundColor = System.Drawing.Color.White;
             this.dgvDriver.BorderStyle = System.Windows.Forms.BorderStyle.None;
-            dataGridViewCellStyle3.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleLeft;
-            dataGridViewCellStyle3.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(52)))), ((int)(((byte)(73)))), ((int)(((byte)(94)))));
-            dataGridViewCellStyle3.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Bold);
-            dataGridViewCellStyle3.ForeColor = System.Drawing.Color.White;
-            dataGridViewCellStyle3.SelectionBackColor = System.Drawing.SystemColors.Highlight;
-            dataGridViewCellStyle3.SelectionForeColor = System.Drawing.SystemColors.HighlightText;
-            dataGridViewCellStyle3.WrapMode = System.Windows.Forms.DataGridViewTriState.True;
-            this.dgvDriver.ColumnHeadersDefaultCellStyle = dataGridViewCellStyle3;
+            dataGridViewCellStyle5.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleLeft;
+            dataGridViewCellStyle5.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(52)))), ((int)(((byte)(73)))), ((int)(((byte)(94)))));
+            dataGridViewCellStyle5.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Bold);
+            dataGridViewCellStyle5.ForeColor = System.Drawing.Color.White;
+            dataGridViewCellStyle5.SelectionBackColor = System.Drawing.SystemColors.Highlight;
+            dataGridViewCellStyle5.SelectionForeColor = System.Drawing.SystemColors.HighlightText;
+            dataGridViewCellStyle5.WrapMode = System.Windows.Forms.DataGridViewTriState.True;
+            this.dgvDriver.ColumnHeadersDefaultCellStyle = dataGridViewCellStyle5;
             this.dgvDriver.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
-            dataGridViewCellStyle4.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleLeft;
-            dataGridViewCellStyle4.BackColor = System.Drawing.SystemColors.Window;
-            dataGridViewCellStyle4.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            dataGridViewCellStyle4.ForeColor = System.Drawing.SystemColors.ControlText;
-            dataGridViewCellStyle4.SelectionBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(52)))), ((int)(((byte)(152)))), ((int)(((byte)(219)))));
-            dataGridViewCellStyle4.SelectionForeColor = System.Drawing.Color.White;
-            dataGridViewCellStyle4.WrapMode = System.Windows.Forms.DataGridViewTriState.False;
-            this.dgvDriver.DefaultCellStyle = dataGridViewCellStyle4;
+            dataGridViewCellStyle6.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleLeft;
+            dataGridViewCellStyle6.BackColor = System.Drawing.SystemColors.Window;
+            dataGridViewCellStyle6.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            dataGridViewCellStyle6.ForeColor = System.Drawing.SystemColors.ControlText;
+            dataGridViewCellStyle6.SelectionBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(52)))), ((int)(((byte)(152)))), ((int)(((byte)(219)))));
+            dataGridViewCellStyle6.SelectionForeColor = System.Drawing.Color.White;
+            dataGridViewCellStyle6.WrapMode = System.Windows.Forms.DataGridViewTriState.False;
+            this.dgvDriver.DefaultCellStyle = dataGridViewCellStyle6;
             this.dgvDriver.EnableHeadersVisualStyles = false;
-            this.dgvDriver.Location = new System.Drawing.Point(20, 190);
+            this.dgvDriver.Location = new System.Drawing.Point(20, 237);
             this.dgvDriver.MultiSelect = false;
             this.dgvDriver.Name = "dgvDriver";
             this.dgvDriver.ReadOnly = true;
@@ -185,7 +187,7 @@ namespace BiroWisataForm
             this.dgvDriver.RowHeadersWidth = 62;
             this.dgvDriver.RowTemplate.Height = 28;
             this.dgvDriver.SelectionMode = System.Windows.Forms.DataGridViewSelectionMode.FullRowSelect;
-            this.dgvDriver.Size = new System.Drawing.Size(720, 270);
+            this.dgvDriver.Size = new System.Drawing.Size(720, 223);
             this.dgvDriver.TabIndex = 10;
             this.dgvDriver.CellContentClick += new System.Windows.Forms.DataGridViewCellEventHandler(this.dgvDriver_CellContentClick);
             // 
@@ -202,7 +204,7 @@ namespace BiroWisataForm
             this.inputPanel.Controls.Add(this.cmbStatus);
             this.inputPanel.Location = new System.Drawing.Point(20, 20);
             this.inputPanel.Name = "inputPanel";
-            this.inputPanel.Size = new System.Drawing.Size(450, 168);
+            this.inputPanel.Size = new System.Drawing.Size(450, 164);
             this.inputPanel.TabIndex = 11;
             // 
             // lblStatus
@@ -232,9 +234,30 @@ namespace BiroWisataForm
             this.btnKembali.UseVisualStyleBackColor = true;
             this.btnKembali.Click += new System.EventHandler(this.btnKembali_Click);
             // 
+            // lblSearch
+            // 
+            this.lblSearch.AutoSize = true;
+            this.lblSearch.Font = new System.Drawing.Font("Segoe UI", 9F);
+            this.lblSearch.Location = new System.Drawing.Point(36, 204);
+            this.lblSearch.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
+            this.lblSearch.Name = "lblSearch";
+            this.lblSearch.Size = new System.Drawing.Size(31, 15);
+            this.lblSearch.TabIndex = 18;
+            this.lblSearch.Text = "Cari:";
+            // 
+            // textBox1
+            // 
+            this.textBox1.Location = new System.Drawing.Point(72, 202);
+            this.textBox1.Name = "textBox1";
+            this.textBox1.Size = new System.Drawing.Size(398, 20);
+            this.textBox1.TabIndex = 19;
+            this.textBox1.TextChanged += new System.EventHandler(this.textBox1_TextChanged);
+            // 
             // Driver
             // 
             this.ClientSize = new System.Drawing.Size(760, 500);
+            this.Controls.Add(this.textBox1);
+            this.Controls.Add(this.lblSearch);
             this.Controls.Add(this.btnKembali);
             this.Controls.Add(this.inputPanel);
             this.Controls.Add(this.dgvDriver);
@@ -252,6 +275,7 @@ namespace BiroWisataForm
             this.inputPanel.ResumeLayout(false);
             this.inputPanel.PerformLayout();
             this.ResumeLayout(false);
+            this.PerformLayout();
 
         }
 
@@ -272,5 +296,7 @@ namespace BiroWisataForm
         private System.Windows.Forms.Label lblStatus;
         private System.Windows.Forms.ComboBox cmbStatus;
         private Button btnKembali;
+        private Label lblSearch;
+        private TextBox textBox1;
     }
 }

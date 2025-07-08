@@ -89,6 +89,8 @@ namespace BiroWisataForm
             this.comboBoxMetode = new System.Windows.Forms.ComboBox();
             this.lblPemesanan = new System.Windows.Forms.Label();
             this.btnKembali = new System.Windows.Forms.Button();
+            this.textBox1 = new System.Windows.Forms.TextBox();
+            this.lblSearch = new System.Windows.Forms.Label();
             ((System.ComponentModel.ISupportInitialize)(this.dgvPembayaran)).BeginInit();
             this.SuspendLayout();
             // 
@@ -158,7 +160,7 @@ namespace BiroWisataForm
             this.lblJumlahPembayaran.Font = new System.Drawing.Font("Segoe UI", 9F);
             this.lblJumlahPembayaran.Location = new System.Drawing.Point(20, 140);
             this.lblJumlahPembayaran.Name = "lblJumlahPembayaran";
-            this.lblJumlahPembayaran.Size = new System.Drawing.Size(123, 15);
+            this.lblJumlahPembayaran.Size = new System.Drawing.Size(183, 25);
             this.lblJumlahPembayaran.TabIndex = 5;
             this.lblJumlahPembayaran.Text = "Jumlah Pembayaran : ";
             // 
@@ -168,7 +170,7 @@ namespace BiroWisataForm
             this.lblTanggalPembayaran.Font = new System.Drawing.Font("Segoe UI", 9F);
             this.lblTanggalPembayaran.Location = new System.Drawing.Point(20, 177);
             this.lblTanggalPembayaran.Name = "lblTanggalPembayaran";
-            this.lblTanggalPembayaran.Size = new System.Drawing.Size(127, 15);
+            this.lblTanggalPembayaran.Size = new System.Drawing.Size(189, 25);
             this.lblTanggalPembayaran.TabIndex = 7;
             this.lblTanggalPembayaran.Text = "Tanggal Pembayaran : ";
             // 
@@ -178,7 +180,7 @@ namespace BiroWisataForm
             this.lblMetodePembayaran.Font = new System.Drawing.Font("Segoe UI", 9F);
             this.lblMetodePembayaran.Location = new System.Drawing.Point(20, 214);
             this.lblMetodePembayaran.Name = "lblMetodePembayaran";
-            this.lblMetodePembayaran.Size = new System.Drawing.Size(126, 15);
+            this.lblMetodePembayaran.Size = new System.Drawing.Size(190, 25);
             this.lblMetodePembayaran.TabIndex = 9;
             this.lblMetodePembayaran.Text = "Metode Pembayaran : ";
             // 
@@ -188,7 +190,7 @@ namespace BiroWisataForm
             this.txtJumlah.Location = new System.Drawing.Point(190, 137);
             this.txtJumlah.Name = "txtJumlah";
             this.txtJumlah.ReadOnly = true;
-            this.txtJumlah.Size = new System.Drawing.Size(480, 23);
+            this.txtJumlah.Size = new System.Drawing.Size(480, 31);
             this.txtJumlah.TabIndex = 6;
             this.txtJumlah.Click += new System.EventHandler(this.CmbPemesanan_SelectedIndexChanged);
             // 
@@ -230,14 +232,15 @@ namespace BiroWisataForm
             this.dgvPembayaran.DefaultCellStyle = dataGridViewCellStyle4;
             this.dgvPembayaran.EnableHeadersVisualStyles = false;
             this.dgvPembayaran.GridColor = System.Drawing.Color.Gainsboro;
-            this.dgvPembayaran.Location = new System.Drawing.Point(23, 251);
+            this.dgvPembayaran.Location = new System.Drawing.Point(23, 306);
             this.dgvPembayaran.MultiSelect = false;
             this.dgvPembayaran.Name = "dgvPembayaran";
             this.dgvPembayaran.ReadOnly = true;
             this.dgvPembayaran.RowHeadersVisible = false;
+            this.dgvPembayaran.RowHeadersWidth = 62;
             this.dgvPembayaran.RowTemplate.Height = 28;
             this.dgvPembayaran.SelectionMode = System.Windows.Forms.DataGridViewSelectionMode.FullRowSelect;
-            this.dgvPembayaran.Size = new System.Drawing.Size(748, 254);
+            this.dgvPembayaran.Size = new System.Drawing.Size(888, 365);
             this.dgvPembayaran.TabIndex = 16;
             this.dgvPembayaran.CellContentClick += new System.Windows.Forms.DataGridViewCellEventHandler(this.dgvPembayaran_CellContentClick);
             // 
@@ -245,6 +248,7 @@ namespace BiroWisataForm
             // 
             this.colIDPembayaran.DataPropertyName = "IDPembayaran";
             this.colIDPembayaran.HeaderText = "ID";
+            this.colIDPembayaran.MinimumWidth = 8;
             this.colIDPembayaran.Name = "colIDPembayaran";
             this.colIDPembayaran.ReadOnly = true;
             this.colIDPembayaran.Visible = false;
@@ -254,6 +258,7 @@ namespace BiroWisataForm
             // 
             this.colIDPemesanan.DataPropertyName = "IDPemesanan";
             this.colIDPemesanan.HeaderText = "ID Pesan";
+            this.colIDPemesanan.MinimumWidth = 8;
             this.colIDPemesanan.Name = "colIDPemesanan";
             this.colIDPemesanan.ReadOnly = true;
             this.colIDPemesanan.Width = 80;
@@ -262,6 +267,7 @@ namespace BiroWisataForm
             // 
             this.colNamaPelanggan.DataPropertyName = "NamaPelanggan";
             this.colNamaPelanggan.HeaderText = "Pelanggan";
+            this.colNamaPelanggan.MinimumWidth = 8;
             this.colNamaPelanggan.Name = "colNamaPelanggan";
             this.colNamaPelanggan.ReadOnly = true;
             this.colNamaPelanggan.Width = 150;
@@ -270,6 +276,7 @@ namespace BiroWisataForm
             // 
             this.colNamaPaket.DataPropertyName = "NamaPaket";
             this.colNamaPaket.HeaderText = "Paket Wisata";
+            this.colNamaPaket.MinimumWidth = 8;
             this.colNamaPaket.Name = "colNamaPaket";
             this.colNamaPaket.ReadOnly = true;
             this.colNamaPaket.Width = 150;
@@ -281,8 +288,10 @@ namespace BiroWisataForm
             dataGridViewCellStyle2.NullValue = null;
             this.colJumlahPembayaran.DefaultCellStyle = dataGridViewCellStyle2;
             this.colJumlahPembayaran.HeaderText = "Jumlah Bayar";
+            this.colJumlahPembayaran.MinimumWidth = 8;
             this.colJumlahPembayaran.Name = "colJumlahPembayaran";
             this.colJumlahPembayaran.ReadOnly = true;
+            this.colJumlahPembayaran.Width = 150;
             // 
             // colTangggalPembayaran
             // 
@@ -291,6 +300,7 @@ namespace BiroWisataForm
             dataGridViewCellStyle3.NullValue = null;
             this.colTangggalPembayaran.DefaultCellStyle = dataGridViewCellStyle3;
             this.colTangggalPembayaran.HeaderText = "Tanggal Bayar";
+            this.colTangggalPembayaran.MinimumWidth = 8;
             this.colTangggalPembayaran.Name = "colTangggalPembayaran";
             this.colTangggalPembayaran.ReadOnly = true;
             this.colTangggalPembayaran.Width = 130;
@@ -299,16 +309,20 @@ namespace BiroWisataForm
             // 
             this.colMetodePembayaran.DataPropertyName = "MetodePembayaran";
             this.colMetodePembayaran.HeaderText = "Metode";
+            this.colMetodePembayaran.MinimumWidth = 8;
             this.colMetodePembayaran.Name = "colMetodePembayaran";
             this.colMetodePembayaran.ReadOnly = true;
+            this.colMetodePembayaran.Width = 150;
             // 
             // colTanggalPemesanan
             // 
             this.colTanggalPemesanan.DataPropertyName = "TanggalPemesanan";
             this.colTanggalPemesanan.HeaderText = "Tgl Pesanan";
+            this.colTanggalPemesanan.MinimumWidth = 8;
             this.colTanggalPemesanan.Name = "colTanggalPemesanan";
             this.colTanggalPemesanan.ReadOnly = true;
             this.colTanggalPemesanan.Visible = false;
+            this.colTanggalPemesanan.Width = 150;
             // 
             // cmbPemesanan
             // 
@@ -317,7 +331,7 @@ namespace BiroWisataForm
             this.cmbPemesanan.FormattingEnabled = true;
             this.cmbPemesanan.Location = new System.Drawing.Point(190, 100);
             this.cmbPemesanan.Name = "cmbPemesanan";
-            this.cmbPemesanan.Size = new System.Drawing.Size(480, 23);
+            this.cmbPemesanan.Size = new System.Drawing.Size(480, 33);
             this.cmbPemesanan.TabIndex = 4;
             // 
             // dateTimePicker1
@@ -325,7 +339,7 @@ namespace BiroWisataForm
             this.dateTimePicker1.Font = new System.Drawing.Font("Segoe UI", 9F);
             this.dateTimePicker1.Location = new System.Drawing.Point(190, 174);
             this.dateTimePicker1.Name = "dateTimePicker1";
-            this.dateTimePicker1.Size = new System.Drawing.Size(480, 23);
+            this.dateTimePicker1.Size = new System.Drawing.Size(480, 31);
             this.dateTimePicker1.TabIndex = 8;
             // 
             // dtpPemesananFilterStart
@@ -333,7 +347,7 @@ namespace BiroWisataForm
             this.dtpPemesananFilterStart.Font = new System.Drawing.Font("Segoe UI", 9F);
             this.dtpPemesananFilterStart.Location = new System.Drawing.Point(160, 20);
             this.dtpPemesananFilterStart.Name = "dtpPemesananFilterStart";
-            this.dtpPemesananFilterStart.Size = new System.Drawing.Size(220, 23);
+            this.dtpPemesananFilterStart.Size = new System.Drawing.Size(220, 31);
             this.dtpPemesananFilterStart.TabIndex = 1;
             // 
             // lblPemesananFilterStart
@@ -342,7 +356,7 @@ namespace BiroWisataForm
             this.lblPemesananFilterStart.Font = new System.Drawing.Font("Segoe UI", 9F);
             this.lblPemesananFilterStart.Location = new System.Drawing.Point(20, 24);
             this.lblPemesananFilterStart.Name = "lblPemesananFilterStart";
-            this.lblPemesananFilterStart.Size = new System.Drawing.Size(119, 15);
+            this.lblPemesananFilterStart.Size = new System.Drawing.Size(178, 25);
             this.lblPemesananFilterStart.TabIndex = 0;
             this.lblPemesananFilterStart.Text = "Filter Tgl Pesan Dari : ";
             // 
@@ -351,7 +365,7 @@ namespace BiroWisataForm
             this.dtpPemesananFilterEnd.Font = new System.Drawing.Font("Segoe UI", 9F);
             this.dtpPemesananFilterEnd.Location = new System.Drawing.Point(450, 20);
             this.dtpPemesananFilterEnd.Name = "dtpPemesananFilterEnd";
-            this.dtpPemesananFilterEnd.Size = new System.Drawing.Size(220, 23);
+            this.dtpPemesananFilterEnd.Size = new System.Drawing.Size(220, 31);
             this.dtpPemesananFilterEnd.TabIndex = 2;
             // 
             // lblPemesananFilterEnd
@@ -360,7 +374,7 @@ namespace BiroWisataForm
             this.lblPemesananFilterEnd.Font = new System.Drawing.Font("Segoe UI", 9F);
             this.lblPemesananFilterEnd.Location = new System.Drawing.Point(390, 24);
             this.lblPemesananFilterEnd.Name = "lblPemesananFilterEnd";
-            this.lblPemesananFilterEnd.Size = new System.Drawing.Size(52, 15);
+            this.lblPemesananFilterEnd.Size = new System.Drawing.Size(80, 25);
             this.lblPemesananFilterEnd.TabIndex = 0;
             this.lblPemesananFilterEnd.Text = "Sampai :";
             // 
@@ -369,7 +383,7 @@ namespace BiroWisataForm
             this.dtpPembayaranFilterStart.Font = new System.Drawing.Font("Segoe UI", 9F);
             this.dtpPembayaranFilterStart.Location = new System.Drawing.Point(160, 55);
             this.dtpPembayaranFilterStart.Name = "dtpPembayaranFilterStart";
-            this.dtpPembayaranFilterStart.Size = new System.Drawing.Size(220, 23);
+            this.dtpPembayaranFilterStart.Size = new System.Drawing.Size(220, 31);
             this.dtpPembayaranFilterStart.TabIndex = 3;
             // 
             // lblPembayaranFilterStart
@@ -378,7 +392,7 @@ namespace BiroWisataForm
             this.lblPembayaranFilterStart.Font = new System.Drawing.Font("Segoe UI", 9F);
             this.lblPembayaranFilterStart.Location = new System.Drawing.Point(20, 59);
             this.lblPembayaranFilterStart.Name = "lblPembayaranFilterStart";
-            this.lblPembayaranFilterStart.Size = new System.Drawing.Size(117, 15);
+            this.lblPembayaranFilterStart.Size = new System.Drawing.Size(176, 25);
             this.lblPembayaranFilterStart.TabIndex = 0;
             this.lblPembayaranFilterStart.Text = "Filter Tgl Bayar Dari : ";
             // 
@@ -387,7 +401,7 @@ namespace BiroWisataForm
             this.dtpPembayaranFilterEnd.Font = new System.Drawing.Font("Segoe UI", 9F);
             this.dtpPembayaranFilterEnd.Location = new System.Drawing.Point(450, 55);
             this.dtpPembayaranFilterEnd.Name = "dtpPembayaranFilterEnd";
-            this.dtpPembayaranFilterEnd.Size = new System.Drawing.Size(220, 23);
+            this.dtpPembayaranFilterEnd.Size = new System.Drawing.Size(220, 31);
             this.dtpPembayaranFilterEnd.TabIndex = 4;
             // 
             // lblPembayaranFilterEnd
@@ -396,7 +410,7 @@ namespace BiroWisataForm
             this.lblPembayaranFilterEnd.Font = new System.Drawing.Font("Segoe UI", 9F);
             this.lblPembayaranFilterEnd.Location = new System.Drawing.Point(390, 59);
             this.lblPembayaranFilterEnd.Name = "lblPembayaranFilterEnd";
-            this.lblPembayaranFilterEnd.Size = new System.Drawing.Size(52, 15);
+            this.lblPembayaranFilterEnd.Size = new System.Drawing.Size(80, 25);
             this.lblPembayaranFilterEnd.TabIndex = 0;
             this.lblPembayaranFilterEnd.Text = "Sampai :";
             // 
@@ -422,7 +436,7 @@ namespace BiroWisataForm
             this.comboBoxMetode.FormattingEnabled = true;
             this.comboBoxMetode.Location = new System.Drawing.Point(190, 211);
             this.comboBoxMetode.Name = "comboBoxMetode";
-            this.comboBoxMetode.Size = new System.Drawing.Size(480, 23);
+            this.comboBoxMetode.Size = new System.Drawing.Size(480, 33);
             this.comboBoxMetode.TabIndex = 9;
             // 
             // lblPemesanan
@@ -431,7 +445,7 @@ namespace BiroWisataForm
             this.lblPemesanan.Font = new System.Drawing.Font("Segoe UI", 9F);
             this.lblPemesanan.Location = new System.Drawing.Point(20, 103);
             this.lblPemesanan.Name = "lblPemesanan";
-            this.lblPemesanan.Size = new System.Drawing.Size(74, 15);
+            this.lblPemesanan.Size = new System.Drawing.Size(110, 25);
             this.lblPemesanan.TabIndex = 3;
             this.lblPemesanan.Text = "Pemesanan :";
             // 
@@ -445,12 +459,33 @@ namespace BiroWisataForm
             this.btnKembali.UseVisualStyleBackColor = true;
             this.btnKembali.Click += new System.EventHandler(this.btnKembali_Click);
             // 
+            // textBox1
+            // 
+            this.textBox1.Location = new System.Drawing.Point(190, 259);
+            this.textBox1.Name = "textBox1";
+            this.textBox1.Size = new System.Drawing.Size(398, 31);
+            this.textBox1.TabIndex = 20;
+            this.textBox1.TextChanged += new System.EventHandler(this.textBox1_TextChanged);
+            // 
+            // lblSearch
+            // 
+            this.lblSearch.AutoSize = true;
+            this.lblSearch.Font = new System.Drawing.Font("Segoe UI", 9F);
+            this.lblSearch.Location = new System.Drawing.Point(139, 262);
+            this.lblSearch.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
+            this.lblSearch.Name = "lblSearch";
+            this.lblSearch.Size = new System.Drawing.Size(46, 25);
+            this.lblSearch.TabIndex = 21;
+            this.lblSearch.Text = "Cari:";
+            // 
             // Pembayaran
             // 
-            this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
+            this.AutoScaleDimensions = new System.Drawing.SizeF(10F, 25F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.BackColor = System.Drawing.Color.WhiteSmoke;
-            this.ClientSize = new System.Drawing.Size(976, 526);
+            this.ClientSize = new System.Drawing.Size(976, 692);
+            this.Controls.Add(this.lblSearch);
+            this.Controls.Add(this.textBox1);
             this.Controls.Add(this.btnKembali);
             this.Controls.Add(this.lblPemesanan);
             this.Controls.Add(this.comboBoxMetode);
@@ -495,5 +530,7 @@ namespace BiroWisataForm
         private System.Windows.Forms.DataGridViewTextBoxColumn colTanggalPemesanan;
         private System.Windows.Forms.DataGridViewTextBoxColumn colTangggalPembayaran;
         private System.Windows.Forms.Button btnKembali;
+        private System.Windows.Forms.TextBox textBox1;
+        private System.Windows.Forms.Label lblSearch;
     }
 }

@@ -29,7 +29,7 @@ namespace BiroWisataForm
             InitializeComponent(); // This initializes txtSearch and errorProvider1 from the designer
             InitializeDataGridViewSettings(); // Configure DGV properties
             InitializeSearchBox();         // Setup search functionality
-            EnsureDatabaseIndexes(); 
+            EnsureDatabaseIndexes();
         }
 
 
@@ -298,6 +298,7 @@ namespace BiroWisataForm
 
         private void btnTambah_Click(object sender, EventArgs e)
         {
+            // Validasi input dan pengecekan duplikat tetap di sini
             if (!ValidateInput())
             {
                 MessageBox.Show("Harap perbaiki kesalahan input sebelum menyimpan.", "Validasi Gagal",
@@ -305,21 +306,24 @@ namespace BiroWisataForm
                 return;
             }
 
-            // --- BARIS BARU: Panggil fungsi pengecekan duplikat ---
             if (IsDataDuplikat(txtNoTelp.Text.Trim(), txtEmail.Text.Trim()))
             {
-                MessageBox.Show("Nomor Telepon atau Email sudah terdaftar untuk pelanggan lain.", "Data Duplikat",
+                MessageBox.Show("Nomor Telepon atau Email sudah terdaftar.", "Data Duplikat",
                     MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                return; // Hentikan proses jika ada duplikat
+                return;
             }
-            // --------------------------------------------------------
 
+            // --- MANAJEMEN TRANSAKSI ---
             using (SqlConnection conn = new SqlConnection(kn.connectionString()))
             {
+                SqlTransaction transaction = null;
+
                 try
                 {
                     conn.Open();
-                    using (SqlCommand cmd = new SqlCommand("sp_AddPelanggan", conn))
+                    transaction = conn.BeginTransaction();
+
+                    using (SqlCommand cmd = new SqlCommand("sp_AddPelanggan", conn, transaction))
                     {
                         cmd.CommandType = CommandType.StoredProcedure;
 
@@ -332,21 +336,27 @@ namespace BiroWisataForm
 
                         if (result > 0)
                         {
+                            // Hanya jika BERHASIL, commit transaksi
+                            transaction.Commit();
                             MessageBox.Show("Data pelanggan berhasil ditambahkan!", "Sukses",
                                 MessageBoxButtons.OK, MessageBoxIcon.Information);
                             RefreshData();
                         }
+                        else
+                        {
+                            // Lemparkan exception jika gagal menambahkan data
+                            throw new Exception("Gagal menambahkan data pelanggan ke database.");
+                        }
                     }
-                }
-                catch (SqlException sqlEx)
-                {
-                    MessageBox.Show($"Database Error: {sqlEx.Message}\n(Error Number: {sqlEx.Number})", "SQL Error",
-                                        MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
                 catch (Exception ex)
                 {
-                    MessageBox.Show($"Error: {ex.Message}", "Error",
-                        MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    // --- TITIK PUSAT ROLLBACK: Semua kegagalan ditangani di sini ---
+                    transaction?.Rollback();
+
+                    // Tampilkan pesan error yang sesuai
+                    string title = (ex is SqlException) ? "SQL Error" : "Error";
+                    MessageBox.Show(ex.Message, title, MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
             }
         }
@@ -423,47 +433,39 @@ namespace BiroWisataForm
 
         private void btnUbah_Click(object sender, EventArgs e)
         {
-            int selectedId = 0;
-            if (dgvPelanggan.SelectedRows.Count > 0)
-            {
-                var idCell = dgvPelanggan.SelectedRows[0].Cells["colIDPelanggan"];
-                if (idCell?.Value != null)
-                {
-                    selectedId = Convert.ToInt32(idCell.Value);
-                }
-            }
-
-            if (selectedId == 0)
+            // Bagian validasi input dan pengecekan duplikat tetap sama...
+            if (dgvPelanggan.SelectedRows.Count == 0 || dgvPelanggan.SelectedRows[0].Cells["colIDPelanggan"].Value == null)
             {
                 MessageBox.Show("Pilih pelanggan yang akan diubah!", "Peringatan", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
+            int selectedId = Convert.ToInt32(dgvPelanggan.SelectedRows[0].Cells["colIDPelanggan"].Value);
 
             if (!ValidateInput())
             {
-                MessageBox.Show("Harap perbaiki kesalahan input sebelum menyimpan.", "Validasi Gagal",
-                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                // ... validasi input gagal
                 return;
             }
 
-            // --- BARIS BARU: Panggil fungsi pengecekan duplikat dengan ID yang dikecualikan ---
             if (IsDataDuplikat(txtNoTelp.Text.Trim(), txtEmail.Text.Trim(), selectedId))
             {
-                MessageBox.Show("Nomor Telepon atau Email yang Anda masukkan sudah digunakan oleh pelanggan lain.", "Data Duplikat",
-                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                return; // Hentikan proses jika ada duplikat
+                // ... data duplikat ditemukan
+                return;
             }
-            // ----------------------------------------------------------------------------------
 
+            // --- MANAJEMEN TRANSAKSI ---
             using (SqlConnection conn = new SqlConnection(kn.connectionString()))
             {
+                SqlTransaction transaction = null;
+
                 try
                 {
                     conn.Open();
-                    using (SqlCommand cmd = new SqlCommand("sp_UpdatePelanggan", conn))
+                    transaction = conn.BeginTransaction();
+
+                    using (SqlCommand cmd = new SqlCommand("sp_UpdatePelanggan", conn, transaction))
                     {
                         cmd.CommandType = CommandType.StoredProcedure;
-
                         cmd.Parameters.AddWithValue("@IDPelanggan", selectedId);
                         cmd.Parameters.AddWithValue("@NamaPelanggan", txtNama.Text.Trim());
                         cmd.Parameters.AddWithValue("@Alamat", txtAlamat.Text.Trim());
@@ -474,23 +476,27 @@ namespace BiroWisataForm
 
                         if (result > 0)
                         {
+                            // HANYA JIKA BERHASIL, commit transaksi
+                            transaction.Commit();
                             MessageBox.Show("Data pelanggan berhasil diubah!", "Sukses", MessageBoxButtons.OK, MessageBoxIcon.Information);
                             RefreshData();
                         }
                         else
                         {
-                            MessageBox.Show("Data pelanggan tidak ditemukan atau tidak ada perubahan.", "Informasi", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                            // --- BARIS BARU: Lemparkan exception jika tidak ada perubahan ---
+                            // Ini akan ditangkap oleh blok 'catch' di bawah.
+                            throw new Exception("Data pelanggan tidak ditemukan atau tidak ada perubahan data.");
                         }
                     }
                 }
-                catch (SqlException sqlEx)
-                {
-                    MessageBox.Show($"Database Error: {sqlEx.Message}\n(Error Number: {sqlEx.Number})", "SQL Error",
-                                        MessageBoxButtons.OK, MessageBoxIcon.Error);
-                }
                 catch (Exception ex)
                 {
-                    MessageBox.Show($"Error: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    // --- TITIK PUSAT ROLLBACK: Semua kegagalan akan ditangani di sini ---
+                    transaction?.Rollback();
+
+                    // Tampilkan pesan error yang sesuai
+                    string title = (ex is SqlException) ? "SQL Error" : "Error";
+                    MessageBox.Show(ex.Message, title, MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
             }
         }

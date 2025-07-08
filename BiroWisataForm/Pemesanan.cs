@@ -15,6 +15,7 @@ namespace BiroWisataForm
         // --- Member Variables ---
         private string connectionString = "";
         private int selectedPemesananId = -1;
+        private Timer searchTimer;
 
         // --- Constructor ---
         public Pemesanan()
@@ -30,6 +31,13 @@ namespace BiroWisataForm
             LoadStatusPembayaran();
             LoadStatusPemesananOptions();
             // RefreshData called in Load event
+
+            // --- TAMBAHKAN BLOK KODE DI BAWAH INI ---
+            // Inisialisasi Timer untuk pencarian
+            searchTimer = new Timer();
+            searchTimer.Interval = 400; // Jeda 400 milidetik sebelum mencari
+            searchTimer.Tick += SearchTimer_Tick; // Hubungkan timer ke metode SearchTimer_Tick
+                                                  // ----------------------------------------
         }
 
 
@@ -98,30 +106,47 @@ namespace BiroWisataForm
             // You could override styles here if needed, but it's cleaner in Designer.cs
         }
 
+        // Ganti metode ini di Pemesanan.cs
+        // GANTI metode InitializeSearchBox dengan yang ini
         private void InitializeSearchBox()
         {
-            // txtSearch should be initialized by the Designer
             this.txtSearch.TextChanged += (s, e) =>
             {
-                if (dgvPemesanan.DataSource is DataTable dt)
-                {
-                    try
-                    {
-                        string filterText = this.txtSearch.Text.Trim()
-                            .Replace("'", "''").Replace("%", "[%]").Replace("_", "[_]");
-
-                        // Filter on columns available from the RefreshData query's JOIN results
-                        dt.DefaultView.RowFilter = string.Format(
-                            "NamaPelanggan LIKE '%{0}%' OR NamaPaket LIKE '%{0}%' OR StatusPembayaran LIKE '%{0}%'",
-                            filterText);
-                    }
-                    catch (Exception ex)
-                    {
-                        Console.WriteLine("Error setting RowFilter: " + ex.Message);
-                        dt.DefaultView.RowFilter = string.Empty;
-                    }
-                }
+                // Setiap kali user mengetik, hentikan timer yang sedang berjalan (jika ada)
+                searchTimer.Stop();
+                // dan mulai lagi dari awal. Pencarian baru akan terjadi setelah user berhenti mengetik.
+                searchTimer.Start();
             };
+        }
+
+        // TAMBAHKAN metode BARU ini di mana saja di dalam kelas Pemesanan
+        private void SearchTimer_Tick(object sender, EventArgs e)
+        {
+            // Pertama, hentikan timer agar tidak berjalan berulang kali tanpa henti
+            searchTimer.Stop();
+
+            // Logika filter yang sebelumnya ada di TextChanged sekarang pindah ke sini
+            if (dgvPemesanan.DataSource is DataTable dt)
+            {
+                try
+                {
+                    string filterText = this.txtSearch.Text.Trim()
+                        .Replace("'", "''").Replace("%", "[%]").Replace("_", "[_]");
+
+                    // Query filter ini tetap sama seperti sebelumnya
+                    dt.DefaultView.RowFilter = string.Format(
+                        "NamaPelanggan LIKE '%{0}%' OR " +
+                        "NamaPaket LIKE '%{0}%' OR " +
+                        "StatusPembayaran LIKE '%{0}%' OR " +
+                        "CONVERT(TotalPembayaran, 'System.String') LIKE '%{0}%'",
+                        filterText);
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine("Error setting RowFilter: " + ex.Message);
+                    dt.DefaultView.RowFilter = string.Empty;
+                }
+            }
         }
 
 
@@ -129,7 +154,7 @@ namespace BiroWisataForm
         private void LoadComboBoxData(ComboBox comboBox, string query, string displayMember, string valueMember, string placeholder)
         {
             // This helper method looks good
-            using (var conn = new SqlConnection(connectionString))
+            using (var conn = new SqlConnection(kn.connectionString()))
             {
                 try
                 {
@@ -163,7 +188,7 @@ namespace BiroWisataForm
             // Pastikan query mengambil 'Harga'
             string query = "SELECT IDPaket, NamaPaket, Harga FROM PaketWisata WHERE IsDeleted = 0 ORDER BY NamaPaket";
 
-            using (var conn = new SqlConnection(connectionString))
+            using (var conn = new SqlConnection(kn.connectionString()))
             {
                 try
                 {
@@ -208,7 +233,7 @@ namespace BiroWisataForm
 
         private bool RefreshData()
         {
-            using (var conn = new SqlConnection(connectionString))
+            using (var conn = new SqlConnection(kn.connectionString()))
             {
                 try
                 {
@@ -263,7 +288,7 @@ namespace BiroWisataForm
 
             try
             {
-                using (SqlConnection checkConn = new SqlConnection(connectionString))
+                using (SqlConnection checkConn = new SqlConnection(kn.connectionString()))
                 {
                     string checkQuery = @"SELECT COUNT(1) FROM dbo.Pemesanan WHERE IDPelanggan = @IDPelanggan AND IDPaket = @IDPaket AND StatusPemesanan NOT IN ('Selesai', 'Dibatalkan')";
                     using (SqlCommand checkCmd = new SqlCommand(checkQuery, checkConn))
@@ -292,7 +317,7 @@ namespace BiroWisataForm
             string createdBy = Environment.UserName;
 
             // Logika transaksi yang sudah disederhanakan
-            SqlConnection conn = new SqlConnection(connectionString);
+            SqlConnection conn = new SqlConnection(kn.connectionString());
             SqlTransaction transaction = null;
 
             try
@@ -387,7 +412,7 @@ namespace BiroWisataForm
             // =======================================================
             try
             {
-                using (SqlConnection checkConn = new SqlConnection(connectionString))
+                using (SqlConnection checkConn = new SqlConnection(kn.connectionString()))
                 {
                     string checkQuery = @"SELECT COUNT(1) FROM dbo.Pemesanan
                                   WHERE IDPelanggan = @IDPelanggan
@@ -426,7 +451,7 @@ namespace BiroWisataForm
             string updatedBy = Environment.UserName;
 
             // Logika transaksi untuk mengubah data dan menyesuaikan kuota tetap sama
-            SqlConnection conn = new SqlConnection(connectionString);
+            SqlConnection conn = new SqlConnection(kn.connectionString());
             SqlTransaction transaction = null;
 
             try
@@ -522,7 +547,7 @@ namespace BiroWisataForm
                 return;
             }
 
-            SqlConnection conn = new SqlConnection(connectionString);
+            SqlConnection conn = new SqlConnection(kn.connectionString());
             SqlTransaction transaction = null;
 
             try
@@ -681,7 +706,7 @@ namespace BiroWisataForm
         {
             MessageBox.Show($"Error saat {operation}: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
-        
+
         private void HandleSqlError(SqlException ex, string operation)
         {
             string userMessage = $"Error Database saat {operation} data: Terjadi masalah umum.";
@@ -813,7 +838,7 @@ namespace BiroWisataForm
             else
             {
                 // Optional: if you want to clear inputs when no row is selected after a deselection action
-                 ClearInputs();
+                ClearInputs();
             }
         }
 
@@ -854,7 +879,7 @@ namespace BiroWisataForm
             if (MessageBox.Show($"Yakin ingin mengubah status pemesanan ID {selectedPemesananId} menjadi '{newStatusPemesanan}'?",
                                  "Konfirmasi Ubah Status", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
             {
-                using (var conn = new SqlConnection(connectionString))
+                using (var conn = new SqlConnection(kn.connectionString()))
                 {
                     try
                     {

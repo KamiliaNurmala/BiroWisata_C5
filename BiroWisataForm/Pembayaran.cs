@@ -174,14 +174,12 @@ namespace BiroWisataForm
             comboBoxMetode.DropDownStyle = ComboBoxStyle.DropDownList;
         }
 
-        private bool RefreshData(DateTime? pemesananFilterStart, DateTime? pemesananFilterEnd,
-                         DateTime? pembayaranFilterStart, DateTime? pembayaranFilterEnd) // <-- DIUBAH jadi bool
+        private bool RefreshData(string searchTerm = null, DateTime? pemesananFilterStart = null, DateTime? pemesananFilterEnd = null, DateTime? pembayaranFilterStart = null, DateTime? pembayaranFilterEnd = null)
         {
             using (SqlConnection conn = new SqlConnection(kn.connectionString()))
             {
                 try
                 {
-                    // ... (kode di dalam try block Anda tetap sama) ...
                     conn.Open();
                     string query = @"SELECT 
                                 pb.IDPembayaran, pb.IDPemesanan, pl.NamaPelanggan, pw.NamaPaket,
@@ -191,36 +189,62 @@ namespace BiroWisataForm
                              INNER JOIN Pelanggan pl ON pem.IDPelanggan = pl.IDPelanggan
                              INNER JOIN PaketWisata pw ON pem.IDPaket = pw.IDPaket
                              WHERE 1=1 ";
+
                     SqlCommand cmd = new SqlCommand();
                     cmd.Parameters.Clear();
+
+                    // --- PERUBAHAN ADA DI SINI ---
+                    if (!string.IsNullOrWhiteSpace(searchTerm))
+                    {
+                        // Menambahkan pencarian berdasarkan JumlahPembayaran
+                        query += " AND (pl.NamaPelanggan LIKE @SearchTerm OR pw.NamaPaket LIKE @SearchTerm OR CAST(pb.IDPemesanan AS VARCHAR) LIKE @SearchTerm OR CAST(pb.JumlahPembayaran AS VARCHAR(50)) LIKE @SearchTerm)";
+                        cmd.Parameters.AddWithValue("@SearchTerm", $"%{searchTerm}%");
+                    }
+                    // --- AKHIR PERUBAHAN ---
+
                     if (pemesananFilterStart.HasValue) { query += " AND pem.TanggalPemesanan >= @PemesananStartDate "; cmd.Parameters.AddWithValue("@PemesananStartDate", pemesananFilterStart.Value.Date); }
                     if (pemesananFilterEnd.HasValue) { query += " AND pem.TanggalPemesanan <= @PemesananEndDate "; cmd.Parameters.AddWithValue("@PemesananEndDate", pemesananFilterEnd.Value.Date.AddDays(1).AddTicks(-1)); }
                     if (pembayaranFilterStart.HasValue) { query += " AND pb.TanggalPembayaran >= @PembayaranStartDate "; cmd.Parameters.AddWithValue("@PembayaranStartDate", pembayaranFilterStart.Value.Date); }
                     if (pembayaranFilterEnd.HasValue) { query += " AND pb.TanggalPembayaran <= @PembayaranEndDate "; cmd.Parameters.AddWithValue("@PembayaranEndDate", pembayaranFilterEnd.Value.Date.AddDays(1).AddTicks(-1)); }
 
                     query += " ORDER BY pb.TanggalPembayaran DESC, pb.IDPembayaran DESC";
-                    cmd.CommandText = query; cmd.Connection = conn;
+                    cmd.CommandText = query;
+                    cmd.Connection = conn;
 
-                    SqlDataAdapter adapter = new SqlDataAdapter(cmd); DataTable dt = new DataTable(); adapter.Fill(dt);
-                    dgvPembayaran.DataSource = null;
+                    SqlDataAdapter adapter = new SqlDataAdapter(cmd);
+                    DataTable dt = new DataTable();
+                    adapter.Fill(dt);
+
                     dgvPembayaran.DataSource = dt;
-                    return true; // <-- DITAMBAHKAN: Kembalikan true jika sukses
+
+                    if (string.IsNullOrWhiteSpace(searchTerm) || dt.Rows.Count == 0 || dt.Rows.Count > 1)
+                    {
+                        ClearInputs();
+                    }
+
+                    return true;
                 }
                 catch (Exception ex)
                 {
                     HandleLoadError("Refresh Data Pembayaran", ex);
-                    return false; // <-- DITAMBAHKAN: Kembalikan false jika gagal
+                    return false;
                 }
             }
         }
 
         private void btnFilter_Click(object sender, EventArgs e)
         {
-            DateTime pemesananStart = dtpPemesananFilterStart.Value; DateTime pemesananEnd = dtpPemesananFilterEnd.Value;
-            DateTime pembayaranStart = dtpPembayaranFilterStart.Value; DateTime pembayaranEnd = dtpPembayaranFilterEnd.Value;
+            DateTime pemesananStart = dtpPemesananFilterStart.Value;
+            DateTime pemesananEnd = dtpPemesananFilterEnd.Value;
+            DateTime pembayaranStart = dtpPembayaranFilterStart.Value;
+            DateTime pembayaranEnd = dtpPembayaranFilterEnd.Value;
+
             if (pemesananStart.Date > pemesananEnd.Date) { MessageBox.Show("Tanggal Awal Filter Pemesanan tidak boleh melebihi Tanggal Akhir.", "Filter Error", MessageBoxButtons.OK, MessageBoxIcon.Warning); return; }
             if (pembayaranStart.Date > pembayaranEnd.Date) { MessageBox.Show("Tanggal Awal Filter Pembayaran tidak boleh melebihi Tanggal Akhir.", "Filter Error", MessageBoxButtons.OK, MessageBoxIcon.Warning); return; }
-            RefreshData(pemesananStart, pemesananEnd, pembayaranStart, pembayaranEnd);
+
+            // Asumsikan nama kotak pencarian Anda adalah "textBox1"
+            // Jika namanya beda, sesuaikan "textBox1" di bawah ini
+            RefreshData(textBox1.Text, pemesananStart, pemesananEnd, pembayaranStart, pembayaranEnd);
         }
 
         private void btnRefresh_Click(object sender, EventArgs e)
@@ -309,7 +333,7 @@ namespace BiroWisataForm
             // LOGIKA TRANSAKSI DIMULAI DI SINI
             // =================================================================
 
-            SqlConnection conn = new SqlConnection(connectionString);
+            SqlConnection conn = new SqlConnection(kn.connectionString());
             SqlTransaction transaction = null;
 
             try
@@ -432,7 +456,7 @@ namespace BiroWisataForm
 
             try
             {
-                using (var conn = new SqlConnection(connectionString))
+                using (var conn = new SqlConnection(kn.connectionString()))
                 {
                     conn.Open();
                     using (var cmd = new SqlCommand("sp_UpdatePembayaran", conn))
@@ -475,7 +499,7 @@ namespace BiroWisataForm
             // =================================================================
 
             // Deklarasikan koneksi dan transaksi di luar blok 'try'
-            SqlConnection conn = new SqlConnection(connectionString);
+            SqlConnection conn = new SqlConnection(kn.connectionString());
             SqlTransaction transaction = null;
 
             try
@@ -688,6 +712,21 @@ namespace BiroWisataForm
         private void dgvPembayaran_CellContentClick(object sender, DataGridViewCellEventArgs e)
         {
 
+        }
+
+        private void textBox1_TextChanged(object sender, EventArgs e)
+        {
+            TextBox searchBox = sender as TextBox;
+            if (searchBox != null)
+            {
+                // Panggil refresh dengan teks pencarian, namun tetap gunakan filter tanggal yang aktif
+                DateTime pemesananStart = dtpPemesananFilterStart.Value;
+                DateTime pemesananEnd = dtpPemesananFilterEnd.Value;
+                DateTime pembayaranStart = dtpPembayaranFilterStart.Value;
+                DateTime pembayaranEnd = dtpPembayaranFilterEnd.Value;
+
+                RefreshData(searchBox.Text, pemesananStart, pemesananEnd, pembayaranStart, pembayaranEnd);
+            }
         }
     }
 }
