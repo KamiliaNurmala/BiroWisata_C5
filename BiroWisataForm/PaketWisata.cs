@@ -113,9 +113,10 @@ namespace BiroWisataForm
             // Pastikan Anda sudah menambahkan TextBox dengan nama 'txtSearch' di form designer
             if (this.Controls.Find("txtSearch", true).FirstOrDefault() is TextBox txtSearch)
             {
-                txtSearch.TextChanged += (s, e) =>
+                this.txtSearch.TextChanged += (s, e) =>
                 {
-                    RefreshData(txtSearch.Text);
+                    // Pass the search text to the data refresh method
+                    RefreshData(this.txtSearch.Text);
                 };
             }
         }
@@ -192,25 +193,31 @@ namespace BiroWisataForm
                 {
                     conn.Open();
                     string query = @"
-        SELECT
-            p.IDPaket, p.NamaPaket, p.Destinasi, p.Harga, p.Durasi,
-            p.Fasilitas, p.Kategori, p.Kuota, p.JadwalKeberangkatan,
-            p.IDDriver, d.NamaDriver,
-            p.IDKendaraan, k.Jenis + ' - ' + k.PlatNomor AS KendaraanInfo,
-            p.CreatedAt, p.UpdatedAt, p.CreatedBy, p.UpdatedBy
-        FROM PaketWisata p
-        INNER JOIN Driver d ON p.IDDriver = d.IDDriver
-        INNER JOIN Kendaraan k ON p.IDKendaraan = k.IDKendaraan
-        WHERE p.IsDeleted = 0";
+    SELECT
+        p.IDPaket, p.NamaPaket, p.Destinasi, p.Harga, p.Durasi,
+        p.Fasilitas, p.Kategori, p.Kuota, p.JadwalKeberangkatan,
+        p.IDDriver, d.NamaDriver,
+        p.IDKendaraan, k.Jenis + ' - ' + k.PlatNomor AS KendaraanInfo,
+        p.CreatedAt, p.UpdatedAt, p.CreatedBy, p.UpdatedBy
+    FROM PaketWisata p
+    INNER JOIN Driver d ON p.IDDriver = d.IDDriver
+    INNER JOIN Kendaraan k ON p.IDKendaraan = k.IDKendaraan
+    WHERE p.IsDeleted = 0";
 
                     if (!string.IsNullOrWhiteSpace(searchTerm))
                     {
-                        // --- PERUBAHAN DIMULAI DI SINI ---
-                        // Menambahkan kondisi pencarian untuk kolom Harga.
-                        // CAST(p.Harga AS VARCHAR(50)) mengubah nilai numerik Harga menjadi teks
-                        // agar bisa dicari menggunakan LIKE.
-                        query += " AND (p.NamaPaket LIKE @SearchTerm OR p.Destinasi LIKE @SearchTerm OR p.Kategori LIKE @SearchTerm OR d.NamaDriver LIKE @SearchTerm OR CAST(p.Harga AS VARCHAR(50)) LIKE @SearchTerm)";
-                        // --- AKHIR PERUBAHAN ---
+                        // EXPANDED SEARCH: Include ALL fields that users want to search
+                        query += @" AND (
+                    p.NamaPaket LIKE @SearchTerm OR 
+                    p.Destinasi LIKE @SearchTerm OR 
+                    p.Kategori LIKE @SearchTerm OR 
+                    p.Fasilitas LIKE @SearchTerm OR
+                    d.NamaDriver LIKE @SearchTerm OR 
+                    (k.Jenis + ' - ' + k.PlatNomor) LIKE @SearchTerm OR
+                    CAST(p.Harga AS VARCHAR(50)) LIKE @SearchTerm OR
+                    CAST(p.Kuota AS VARCHAR(10)) LIKE @SearchTerm OR
+                    CONVERT(VARCHAR, p.JadwalKeberangkatan, 103) LIKE @SearchTerm
+                )";
                     }
 
                     var dt = new DataTable();
