@@ -1,23 +1,25 @@
-﻿using System;
+﻿using praktikum7;
+using System;
 using System.Windows.Forms;
 
 namespace BiroWisataForm
 {
     public partial class MenuAdmin : Form
     {
+        Koneksi kn = new Koneksi();
         public MenuAdmin()
         {
             InitializeComponent();
         }
 
-        private void button1_Click(object sender, EventArgs e)
+        private void buttonPelanggan_Click(object sender, EventArgs e)
         {
             // Open the Pelanggan form
             Pelanggan pelangganForm = new Pelanggan();
             pelangganForm.Show();
         }
 
-        private void button2_Click(object sender, EventArgs e)
+        private void buttonDriver_Click(object sender, EventArgs e)
         {
             // Open the Driver form
             Driver driverForm = new Driver();
@@ -30,14 +32,14 @@ namespace BiroWisataForm
             kendaraanForm.Show();
         }
 
-        private void button4_Click(object sender, EventArgs e)
+        private void buttonPaketWisata_Click(object sender, EventArgs e)
         {
             // Open the PaketWisata form
             PaketWisata paketWisataForm = new PaketWisata();
             paketWisataForm.Show();
         }
 
-        private void button5_Click(object sender, EventArgs e)
+        private void buttonPembayaran_Click(object sender, EventArgs e)
         {
             // Open the Pembayaran form
             Pembayaran pembayaranForm = new Pembayaran();
@@ -58,19 +60,27 @@ namespace BiroWisataForm
 
         private void btnLogout_Click(object sender, EventArgs e)
         {
-            // Show confirmation dialog
             DialogResult result = MessageBox.Show("Apakah Anda yakin ingin keluar?",
                 "Konfirmasi Logout", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
 
             if (result == DialogResult.Yes)
             {
-                // Show the login form
-                Form1 loginForm = new Form1();
-                loginForm.Show();
-
-                // Close the current form (MenuAdmin)
-                this.Close();
+                this.Close(); // Just close MenuAdmin. Form1 will take care of reappearing.
             }
+        }
+
+        private void btnLaporan_Click(object sender, EventArgs e)
+        {
+            // Membuat instance baru dari form LaporanTransaksi
+            LaporanTransaksi formLaporan = new LaporanTransaksi();
+
+            // Menampilkan form tersebut
+            formLaporan.Show();
+        }
+
+        private void panelBottom_Paint(object sender, PaintEventArgs e)
+        {
+
         }
     }
 }
