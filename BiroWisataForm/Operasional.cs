@@ -5,11 +5,13 @@ using System.Data.SqlClient;
 using System.Windows.Forms;
 using System.Globalization;
 using System.Linq;
+using praktikum7;
 
 namespace BiroWisataForm
 {
     public partial class Operasional : Form
     {
+        Koneksi kn = new Koneksi();
         //private string connectionString =
         //    //@"Data Source=MSI;Initial Catalog=BiroWisata;Integrated Security=True";
         private string connectionString = @"Data Source=KAMILIA\KAMILIANURMALA;Initial Catalog=BiroWisata;Integrated Security=True;";

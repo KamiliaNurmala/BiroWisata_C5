@@ -54,10 +54,10 @@ namespace BiroWisataForm
         /// </summary>
         private void InitializeComponent()
         {
-            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle5 = new System.Windows.Forms.DataGridViewCellStyle();
-            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle8 = new System.Windows.Forms.DataGridViewCellStyle();
-            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle6 = new System.Windows.Forms.DataGridViewCellStyle();
-            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle7 = new System.Windows.Forms.DataGridViewCellStyle();
+            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle1 = new System.Windows.Forms.DataGridViewCellStyle();
+            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle4 = new System.Windows.Forms.DataGridViewCellStyle();
+            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle2 = new System.Windows.Forms.DataGridViewCellStyle();
+            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle3 = new System.Windows.Forms.DataGridViewCellStyle();
             this.btnTambah = new System.Windows.Forms.Button();
             this.btnHapus = new System.Windows.Forms.Button();
             this.btnUbah = new System.Windows.Forms.Button();
@@ -201,14 +201,14 @@ namespace BiroWisataForm
             | System.Windows.Forms.AnchorStyles.Right)));
             this.dgvPembayaran.BackgroundColor = System.Drawing.Color.White;
             this.dgvPembayaran.BorderStyle = System.Windows.Forms.BorderStyle.None;
-            dataGridViewCellStyle5.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleLeft;
-            dataGridViewCellStyle5.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(52)))), ((int)(((byte)(73)))), ((int)(((byte)(94)))));
-            dataGridViewCellStyle5.Font = new System.Drawing.Font("Segoe UI", 9F);
-            dataGridViewCellStyle5.ForeColor = System.Drawing.Color.White;
-            dataGridViewCellStyle5.SelectionBackColor = System.Drawing.SystemColors.Highlight;
-            dataGridViewCellStyle5.SelectionForeColor = System.Drawing.SystemColors.HighlightText;
-            dataGridViewCellStyle5.WrapMode = System.Windows.Forms.DataGridViewTriState.True;
-            this.dgvPembayaran.ColumnHeadersDefaultCellStyle = dataGridViewCellStyle5;
+            dataGridViewCellStyle1.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleLeft;
+            dataGridViewCellStyle1.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(52)))), ((int)(((byte)(73)))), ((int)(((byte)(94)))));
+            dataGridViewCellStyle1.Font = new System.Drawing.Font("Segoe UI", 9F);
+            dataGridViewCellStyle1.ForeColor = System.Drawing.Color.White;
+            dataGridViewCellStyle1.SelectionBackColor = System.Drawing.SystemColors.Highlight;
+            dataGridViewCellStyle1.SelectionForeColor = System.Drawing.SystemColors.HighlightText;
+            dataGridViewCellStyle1.WrapMode = System.Windows.Forms.DataGridViewTriState.True;
+            this.dgvPembayaran.ColumnHeadersDefaultCellStyle = dataGridViewCellStyle1;
             this.dgvPembayaran.ColumnHeadersHeight = 34;
             this.dgvPembayaran.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.DisableResizing;
             this.dgvPembayaran.Columns.AddRange(new System.Windows.Forms.DataGridViewColumn[] {
@@ -220,14 +220,14 @@ namespace BiroWisataForm
             this.colTangggalPembayaran,
             this.colMetodePembayaran,
             this.colTanggalPemesanan});
-            dataGridViewCellStyle8.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleLeft;
-            dataGridViewCellStyle8.BackColor = System.Drawing.SystemColors.Window;
-            dataGridViewCellStyle8.Font = new System.Drawing.Font("Segoe UI", 9F);
-            dataGridViewCellStyle8.ForeColor = System.Drawing.SystemColors.ControlText;
-            dataGridViewCellStyle8.SelectionBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(52)))), ((int)(((byte)(152)))), ((int)(((byte)(219)))));
-            dataGridViewCellStyle8.SelectionForeColor = System.Drawing.Color.White;
-            dataGridViewCellStyle8.WrapMode = System.Windows.Forms.DataGridViewTriState.False;
-            this.dgvPembayaran.DefaultCellStyle = dataGridViewCellStyle8;
+            dataGridViewCellStyle4.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleLeft;
+            dataGridViewCellStyle4.BackColor = System.Drawing.SystemColors.Window;
+            dataGridViewCellStyle4.Font = new System.Drawing.Font("Segoe UI", 9F);
+            dataGridViewCellStyle4.ForeColor = System.Drawing.SystemColors.ControlText;
+            dataGridViewCellStyle4.SelectionBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(52)))), ((int)(((byte)(152)))), ((int)(((byte)(219)))));
+            dataGridViewCellStyle4.SelectionForeColor = System.Drawing.Color.White;
+            dataGridViewCellStyle4.WrapMode = System.Windows.Forms.DataGridViewTriState.False;
+            this.dgvPembayaran.DefaultCellStyle = dataGridViewCellStyle4;
             this.dgvPembayaran.EnableHeadersVisualStyles = false;
             this.dgvPembayaran.GridColor = System.Drawing.Color.Gainsboro;
             this.dgvPembayaran.Location = new System.Drawing.Point(23, 251);
@@ -239,6 +239,7 @@ namespace BiroWisataForm
             this.dgvPembayaran.SelectionMode = System.Windows.Forms.DataGridViewSelectionMode.FullRowSelect;
             this.dgvPembayaran.Size = new System.Drawing.Size(748, 254);
             this.dgvPembayaran.TabIndex = 16;
+            this.dgvPembayaran.CellContentClick += new System.Windows.Forms.DataGridViewCellEventHandler(this.dgvPembayaran_CellContentClick);
             // 
             // colIDPembayaran
             // 
@@ -275,10 +276,10 @@ namespace BiroWisataForm
             // 
             // colJumlahPembayaran
             // 
-            dataGridViewCellStyle6.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleRight;
-            dataGridViewCellStyle6.Format = "N0";
-            dataGridViewCellStyle6.NullValue = null;
-            this.colJumlahPembayaran.DefaultCellStyle = dataGridViewCellStyle6;
+            dataGridViewCellStyle2.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleRight;
+            dataGridViewCellStyle2.Format = "N0";
+            dataGridViewCellStyle2.NullValue = null;
+            this.colJumlahPembayaran.DefaultCellStyle = dataGridViewCellStyle2;
             this.colJumlahPembayaran.HeaderText = "Jumlah Bayar";
             this.colJumlahPembayaran.Name = "colJumlahPembayaran";
             this.colJumlahPembayaran.ReadOnly = true;
@@ -286,9 +287,9 @@ namespace BiroWisataForm
             // colTangggalPembayaran
             // 
             this.colTangggalPembayaran.DataPropertyName = "TanggalPembayaran";
-            dataGridViewCellStyle7.Format = "f";
-            dataGridViewCellStyle7.NullValue = null;
-            this.colTangggalPembayaran.DefaultCellStyle = dataGridViewCellStyle7;
+            dataGridViewCellStyle3.Format = "f";
+            dataGridViewCellStyle3.NullValue = null;
+            this.colTangggalPembayaran.DefaultCellStyle = dataGridViewCellStyle3;
             this.colTangggalPembayaran.HeaderText = "Tanggal Bayar";
             this.colTangggalPembayaran.Name = "colTangggalPembayaran";
             this.colTangggalPembayaran.ReadOnly = true;

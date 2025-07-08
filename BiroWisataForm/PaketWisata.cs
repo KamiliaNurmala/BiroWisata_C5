@@ -5,11 +5,13 @@ using System.Drawing; // Added for Font/Color if needed
 using System.Windows.Forms;
 using System.Globalization; // Added for parsing potentially
 using System.Linq;
+using praktikum7;
 
 namespace BiroWisataForm
 {
     public partial class PaketWisata : Form
     {
+        Koneksi kn = new Koneksi();
         // --- Member Variables ---
         //private string connectionString =
         //    //@"Data Source=MSI;Initial Catalog=BiroWisata;Integrated Security=True";
@@ -670,6 +672,11 @@ namespace BiroWisataForm
         }
 
         private void txtKuota_TextChanged(object sender, EventArgs e)
+        {
+
+        }
+
+        private void txtFasilitas_TextChanged(object sender, EventArgs e)
         {
 
         }

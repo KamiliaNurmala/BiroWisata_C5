@@ -1,4 +1,5 @@
 ﻿using Microsoft.Reporting.WinForms;
+using praktikum7;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -14,6 +15,7 @@ namespace BiroWisataForm
 {
     public partial class LaporanTransaksi : Form
     {
+        Koneksi kn = new Koneksi();
         public LaporanTransaksi()
         {
             InitializeComponent();

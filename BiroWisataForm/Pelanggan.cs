@@ -1,4 +1,5 @@
-﻿using System;
+﻿using praktikum7;
+using System;
 using System.Data;
 using System.Data.SqlClient;
 using System.Drawing; // For Color, Font
@@ -10,6 +11,7 @@ namespace BiroWisataForm
 {
     public partial class Pelanggan : Form
     {
+        Koneksi kn = new Koneksi();
         //private string connectionString =
         //    //@"Data Source=MSI;Initial Catalog=BiroWisata;Integrated Security=True";
         private string connectionString = @"Data Source=KAMILIA\KAMILIANURMALA;Initial Catalog=BiroWisata;Integrated Security=True;";
@@ -555,6 +557,11 @@ namespace BiroWisataForm
             // Perintah ini akan menutup form 'Kendaraan' saat ini,
             // dan mengembalikan kontrol ke form yang membukanya (yaitu MenuAdmin).
             this.Close();
+        }
+
+        private void dgvPelanggan_CellContentClick_1(object sender, DataGridViewCellEventArgs e)
+        {
+
         }
     }
 }

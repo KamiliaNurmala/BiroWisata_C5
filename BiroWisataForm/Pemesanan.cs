@@ -5,11 +5,13 @@ using System.Drawing;
 using System.Windows.Forms;
 using System.Globalization;
 using System.Linq;
+using praktikum7;
 
 namespace BiroWisataForm
 {
     public partial class Pemesanan : Form
     {
+        Koneksi kn = new Koneksi();
         // --- Member Variables ---
         //private string connectionString =
         //    //@"Data Source=MSI;Initial Catalog=BiroWisata;Integrated Security=True";

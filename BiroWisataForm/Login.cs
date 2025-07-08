@@ -3,11 +3,13 @@ using System.Collections.Generic;
 using System.Data.SqlClient;
 using System.Data;
 using System.Windows.Forms;
+using praktikum7;
 
 namespace BiroWisataForm
 {
     public partial class Login : Form
     {
+        Koneksi kn = new Koneksi();
         //private string connectionString =
         //    //@"Data Source=MSI;Initial Catalog=BiroWisata;Integrated Security=True";
         private string connectionString = @"Data Source=KAMILIA\KAMILIANURMALA;Initial Catalog=BiroWisata;Integrated Security=True;";

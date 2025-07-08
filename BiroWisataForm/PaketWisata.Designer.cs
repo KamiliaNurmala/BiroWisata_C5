@@ -60,10 +60,10 @@ namespace BiroWisataForm
         private void InitializeComponent()
         {
             this.components = new System.ComponentModel.Container();
-            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle9 = new System.Windows.Forms.DataGridViewCellStyle();
-            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle12 = new System.Windows.Forms.DataGridViewCellStyle();
-            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle10 = new System.Windows.Forms.DataGridViewCellStyle();
-            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle11 = new System.Windows.Forms.DataGridViewCellStyle();
+            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle1 = new System.Windows.Forms.DataGridViewCellStyle();
+            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle4 = new System.Windows.Forms.DataGridViewCellStyle();
+            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle2 = new System.Windows.Forms.DataGridViewCellStyle();
+            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle3 = new System.Windows.Forms.DataGridViewCellStyle();
             this.inputPanel = new System.Windows.Forms.Panel();
             this.lblNamaPaket = new System.Windows.Forms.Label();
             this.txtNamaPaket = new System.Windows.Forms.TextBox();
@@ -274,6 +274,7 @@ namespace BiroWisataForm
             this.txtFasilitas.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
             this.txtFasilitas.Size = new System.Drawing.Size(280, 60);
             this.txtFasilitas.TabIndex = 7;
+            this.txtFasilitas.TextChanged += new System.EventHandler(this.txtFasilitas_TextChanged);
             // 
             // lblKategori
             // 
@@ -403,14 +404,14 @@ namespace BiroWisataForm
             this.dgvPaketWisata.BackgroundColor = System.Drawing.Color.White;
             this.dgvPaketWisata.BorderStyle = System.Windows.Forms.BorderStyle.None;
             this.dgvPaketWisata.ColumnHeadersBorderStyle = System.Windows.Forms.DataGridViewHeaderBorderStyle.Single;
-            dataGridViewCellStyle9.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleLeft;
-            dataGridViewCellStyle9.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(52)))), ((int)(((byte)(73)))), ((int)(((byte)(94)))));
-            dataGridViewCellStyle9.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Bold);
-            dataGridViewCellStyle9.ForeColor = System.Drawing.Color.White;
-            dataGridViewCellStyle9.SelectionBackColor = System.Drawing.SystemColors.Highlight;
-            dataGridViewCellStyle9.SelectionForeColor = System.Drawing.SystemColors.HighlightText;
-            dataGridViewCellStyle9.WrapMode = System.Windows.Forms.DataGridViewTriState.True;
-            this.dgvPaketWisata.ColumnHeadersDefaultCellStyle = dataGridViewCellStyle9;
+            dataGridViewCellStyle1.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleLeft;
+            dataGridViewCellStyle1.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(52)))), ((int)(((byte)(73)))), ((int)(((byte)(94)))));
+            dataGridViewCellStyle1.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Bold);
+            dataGridViewCellStyle1.ForeColor = System.Drawing.Color.White;
+            dataGridViewCellStyle1.SelectionBackColor = System.Drawing.SystemColors.Highlight;
+            dataGridViewCellStyle1.SelectionForeColor = System.Drawing.SystemColors.HighlightText;
+            dataGridViewCellStyle1.WrapMode = System.Windows.Forms.DataGridViewTriState.True;
+            this.dgvPaketWisata.ColumnHeadersDefaultCellStyle = dataGridViewCellStyle1;
             this.dgvPaketWisata.ColumnHeadersHeight = 34;
             this.dgvPaketWisata.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.DisableResizing;
             this.dgvPaketWisata.Columns.AddRange(new System.Windows.Forms.DataGridViewColumn[] {
@@ -426,14 +427,14 @@ namespace BiroWisataForm
             this.colJadwal,
             this.colIDDriver_hidden,
             this.colIDKendaraan_hidden});
-            dataGridViewCellStyle12.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleLeft;
-            dataGridViewCellStyle12.BackColor = System.Drawing.SystemColors.Window;
-            dataGridViewCellStyle12.Font = new System.Drawing.Font("Segoe UI", 9F);
-            dataGridViewCellStyle12.ForeColor = System.Drawing.SystemColors.ControlText;
-            dataGridViewCellStyle12.SelectionBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(52)))), ((int)(((byte)(152)))), ((int)(((byte)(219)))));
-            dataGridViewCellStyle12.SelectionForeColor = System.Drawing.Color.White;
-            dataGridViewCellStyle12.WrapMode = System.Windows.Forms.DataGridViewTriState.False;
-            this.dgvPaketWisata.DefaultCellStyle = dataGridViewCellStyle12;
+            dataGridViewCellStyle4.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleLeft;
+            dataGridViewCellStyle4.BackColor = System.Drawing.SystemColors.Window;
+            dataGridViewCellStyle4.Font = new System.Drawing.Font("Segoe UI", 9F);
+            dataGridViewCellStyle4.ForeColor = System.Drawing.SystemColors.ControlText;
+            dataGridViewCellStyle4.SelectionBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(52)))), ((int)(((byte)(152)))), ((int)(((byte)(219)))));
+            dataGridViewCellStyle4.SelectionForeColor = System.Drawing.Color.White;
+            dataGridViewCellStyle4.WrapMode = System.Windows.Forms.DataGridViewTriState.False;
+            this.dgvPaketWisata.DefaultCellStyle = dataGridViewCellStyle4;
             this.dgvPaketWisata.EnableHeadersVisualStyles = false;
             this.dgvPaketWisata.GridColor = System.Drawing.Color.Gainsboro;
             this.dgvPaketWisata.Location = new System.Drawing.Point(20, 360);
@@ -489,9 +490,9 @@ namespace BiroWisataForm
             // colHarga
             // 
             this.colHarga.DataPropertyName = "Harga";
-            dataGridViewCellStyle10.Format = "N0";
-            dataGridViewCellStyle10.NullValue = "0";
-            this.colHarga.DefaultCellStyle = dataGridViewCellStyle10;
+            dataGridViewCellStyle2.Format = "N0";
+            dataGridViewCellStyle2.NullValue = "0";
+            this.colHarga.DefaultCellStyle = dataGridViewCellStyle2;
             this.colHarga.HeaderText = "Harga (Rp)";
             this.colHarga.MinimumWidth = 8;
             this.colHarga.Name = "colHarga";
@@ -536,8 +537,8 @@ namespace BiroWisataForm
             // colJadwal
             // 
             this.colJadwal.DataPropertyName = "JadwalKeberangkatan";
-            dataGridViewCellStyle11.Format = "dd/MM/yyyy";
-            this.colJadwal.DefaultCellStyle = dataGridViewCellStyle11;
+            dataGridViewCellStyle3.Format = "dd/MM/yyyy";
+            this.colJadwal.DefaultCellStyle = dataGridViewCellStyle3;
             this.colJadwal.HeaderText = "Jadwal";
             this.colJadwal.MinimumWidth = 8;
             this.colJadwal.Name = "colJadwal";

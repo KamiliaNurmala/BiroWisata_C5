@@ -1,10 +1,12 @@
-﻿using System;
+﻿using praktikum7;
+using System;
 using System.Windows.Forms;
 
 namespace BiroWisataForm
 {
     public partial class MenuAdmin : Form
     {
+        Koneksi kn = new Koneksi();
         public MenuAdmin()
         {
             InitializeComponent();
