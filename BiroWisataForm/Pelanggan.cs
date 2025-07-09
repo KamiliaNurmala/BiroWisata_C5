@@ -177,19 +177,19 @@ namespace BiroWisataForm
             }
         }
 
-        private bool IsDataDuplikat(string noTelp, string email, int idPelangganToExclude = 0)
+        private bool IsDataDuplikat(string noTelp, string email, string alamat, int idPelangganToExclude = 0)
         {
             using (SqlConnection conn = new SqlConnection(kn.connectionString()))
             {
                 try
                 {
                     conn.Open();
-                    // Query ini akan menghitung berapa banyak pelanggan yang punya NoTelp ATAU Email yang sama.
+                    // Query ini akan menghitung berapa banyak pelanggan yang punya NoTelp ATAU Email ATAU Alamat yang sama.
                     // Kita juga mengecualikan data yang sudah di "soft delete" (IsDeleted = 0).
                     string query = @"
                 SELECT COUNT(*) 
                 FROM Pelanggan 
-                WHERE (NoTelp = @NoTelp OR Email = @Email) 
+                WHERE (NoTelp = @NoTelp OR Email = @Email OR Alamat = @Alamat) 
                   AND IsDeleted = 0";
 
                     // Jika kita sedang dalam mode 'Ubah', kita harus mengecualikan ID pelanggan
@@ -204,6 +204,7 @@ namespace BiroWisataForm
                     {
                         cmd.Parameters.AddWithValue("@NoTelp", noTelp);
                         cmd.Parameters.AddWithValue("@Email", email);
+                        cmd.Parameters.AddWithValue("@Alamat", alamat);
 
                         if (idPelangganToExclude > 0)
                         {
@@ -306,9 +307,9 @@ namespace BiroWisataForm
                 return;
             }
 
-            if (IsDataDuplikat(txtNoTelp.Text.Trim(), txtEmail.Text.Trim()))
+            if (IsDataDuplikat(txtNoTelp.Text.Trim(), txtEmail.Text.Trim(), txtAlamat.Text.Trim()))
             {
-                MessageBox.Show("Nomor Telepon atau Email sudah terdaftar.", "Data Duplikat",
+                MessageBox.Show("Nomor Telepon, Email, atau Alamat sudah terdaftar.", "Data Duplikat",
                     MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
@@ -451,10 +452,10 @@ namespace BiroWisataForm
             }
             // --- AKHIR PERUBAHAN ---
 
-            // Cek data duplikat (untuk No. Telp & Email)
-            if (IsDataDuplikat(txtNoTelp.Text.Trim(), txtEmail.Text.Trim(), selectedId))
+            // Cek data duplikat (untuk No. Telp, Email & Alamat)
+            if (IsDataDuplikat(txtNoTelp.Text.Trim(), txtEmail.Text.Trim(), txtAlamat.Text.Trim(), selectedId))
             {
-                MessageBox.Show("Nomor Telepon atau Email sudah digunakan oleh pelanggan lain.", "Data Duplikat",
+                MessageBox.Show("Nomor Telepon, Email, atau Alamat sudah digunakan oleh pelanggan lain.", "Data Duplikat",
                                 MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
