@@ -238,18 +238,22 @@ namespace BiroWisataForm
                 errorProvider1.SetError(txtNama, "Nama pelanggan harus diisi!");
                 isValid = false;
             }
-            // BARIS BARU: Cek apakah nama hanya berisi huruf dan spasi
-            else if (!txtNama.Text.Replace(" ", "").All(char.IsLetter))
+            // --- PERUBAHAN DIMULAI DI SINI ---
+            // Mengganti validasi lama dengan Regex agar bisa menerima titik (.)
+            // Pola Regex: ^[a-zA-Z\s\.]+$
+            // ^         : Awal string
+            // [a-zA-Z\s\.] : Karakter yang diizinkan (huruf besar/kecil, spasi, dan titik)
+            // +         : Karakter dari set di atas harus muncul satu atau lebih kali
+            // $         : Akhir string
+            else if (!System.Text.RegularExpressions.Regex.IsMatch(txtNama.Text, @"^[a-zA-Z\s\.]+$"))
             {
-                // .Replace(" ", "") digunakan agar spasi tidak dianggap sebagai karakter non-huruf.
-                // .All(char.IsLetter) memeriksa apakah semua karakter yang tersisa adalah huruf.
-                errorProvider1.SetError(txtNama, "Nama pelanggan hanya boleh berisi huruf!");
+                errorProvider1.SetError(txtNama, "Nama pelanggan hanya boleh berisi huruf, spasi, dan titik (.)!");
                 isValid = false;
             }
+            // --- AKHIR PERUBAHAN ---
 
             // --- Validasi Alamat ---
             if (string.IsNullOrWhiteSpace(txtAlamat.Text))
-            // Validasi ini sudah baik
             {
                 errorProvider1.SetError(txtAlamat, "Alamat pelanggan harus diisi!");
                 isValid = false;
@@ -264,7 +268,6 @@ namespace BiroWisataForm
             }
             else if (!phoneNumber.StartsWith("08") || phoneNumber.Length < 10 ||
                      phoneNumber.Length > 13 || !phoneNumber.All(char.IsDigit))
-            // Validasi ini sudah sangat baik
             {
                 errorProvider1.SetError(txtNoTelp,
                     "Nomor telepon harus dimulai dengan '08' dan berisi 10-13 digit angka!");
@@ -282,13 +285,10 @@ namespace BiroWisataForm
             {
                 try
                 {
-                    // Cara ini adalah yang terbaik karena mencakup semua aturan format email standar,
-                    // termasuk validasi keberadaan '@', domain, dan karakter yang tidak diizinkan.
                     var addr = new MailAddress(email);
                 }
                 catch
                 {
-                    // MODIFIKASI: Pesan error dibuat lebih deskriptif
                     errorProvider1.SetError(txtEmail, "Format email tidak valid. Pastikan mengandung '@' dan domain (contoh: nama@email.com).");
                     isValid = false;
                 }
@@ -433,7 +433,7 @@ namespace BiroWisataForm
 
         private void btnUbah_Click(object sender, EventArgs e)
         {
-            // Bagian validasi input dan pengecekan duplikat tetap sama...
+            // Cek apakah ada baris yang dipilih
             if (dgvPelanggan.SelectedRows.Count == 0 || dgvPelanggan.SelectedRows[0].Cells["colIDPelanggan"].Value == null)
             {
                 MessageBox.Show("Pilih pelanggan yang akan diubah!", "Peringatan", MessageBoxButtons.OK, MessageBoxIcon.Warning);
@@ -441,19 +441,25 @@ namespace BiroWisataForm
             }
             int selectedId = Convert.ToInt32(dgvPelanggan.SelectedRows[0].Cells["colIDPelanggan"].Value);
 
+            // --- PERUBAHAN DI SINI ---
+            // Panggil validasi dan tampilkan MessageBox jika gagal
             if (!ValidateInput())
             {
-                // ... validasi input gagal
-                return;
+                MessageBox.Show("Harap perbaiki kesalahan input sebelum menyimpan.", "Validasi Gagal",
+                                MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return; // Hentikan proses jika validasi gagal
             }
+            // --- AKHIR PERUBAHAN ---
 
+            // Cek data duplikat (untuk No. Telp & Email)
             if (IsDataDuplikat(txtNoTelp.Text.Trim(), txtEmail.Text.Trim(), selectedId))
             {
-                // ... data duplikat ditemukan
+                MessageBox.Show("Nomor Telepon atau Email sudah digunakan oleh pelanggan lain.", "Data Duplikat",
+                                MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
 
-            // --- MANAJEMEN TRANSAKSI ---
+            // --- MANAJEMEN TRANSAKSI (Kode ini tetap sama) ---
             using (SqlConnection conn = new SqlConnection(kn.connectionString()))
             {
                 SqlTransaction transaction = null;
@@ -476,25 +482,19 @@ namespace BiroWisataForm
 
                         if (result > 0)
                         {
-                            // HANYA JIKA BERHASIL, commit transaksi
                             transaction.Commit();
                             MessageBox.Show("Data pelanggan berhasil diubah!", "Sukses", MessageBoxButtons.OK, MessageBoxIcon.Information);
                             RefreshData();
                         }
                         else
                         {
-                            // --- BARIS BARU: Lemparkan exception jika tidak ada perubahan ---
-                            // Ini akan ditangkap oleh blok 'catch' di bawah.
                             throw new Exception("Data pelanggan tidak ditemukan atau tidak ada perubahan data.");
                         }
                     }
                 }
                 catch (Exception ex)
                 {
-                    // --- TITIK PUSAT ROLLBACK: Semua kegagalan akan ditangani di sini ---
                     transaction?.Rollback();
-
-                    // Tampilkan pesan error yang sesuai
                     string title = (ex is SqlException) ? "SQL Error" : "Error";
                     MessageBox.Show(ex.Message, title, MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }

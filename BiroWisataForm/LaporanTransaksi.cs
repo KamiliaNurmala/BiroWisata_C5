@@ -6,6 +6,7 @@ using System.ComponentModel;
 using System.Data;
 using System.Data.SqlClient;
 using System.Drawing;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -88,8 +89,10 @@ namespace BiroWisataForm
 
             // Set the path to the report (.rdlc file)
             // Change this to the actual path of your RDLC file
-            reportViewer1.LocalReport.ReportPath = @"D:\Kuliah\semester4\Pengembangan Aplikasi Basis Data\IniKelompok\BiroWisataForm-Final_Perbaikan\BiroWisataForm-Final2\BiroWisataForm-Final\BiroWisataForm\BiroWisataForm\Report1.rdlc"; // Sesuaikan path file .rdlc Anda
+            //reportViewer1.LocalReport.ReportPath = @"D:\Kuliah\semester4\Pengembangan Aplikasi Basis Data\IniKelompok\BiroWisataForm-Final_Perbaikan\BiroWisataForm-Final2\BiroWisataForm-Final\BiroWisataForm\BiroWisataForm\Report1.rdlc"; // Sesuaikan path file .rdlc Anda
 
+            string path = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Report1.rdlc");
+            reportViewer1.LocalReport.ReportPath = path;
             // Refresh the ReportViewer to show the updated report
             reportViewer1.RefreshReport();
         }
