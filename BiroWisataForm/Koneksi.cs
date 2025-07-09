@@ -11,8 +11,8 @@ namespace praktikum7
             try
             {
                 // Use localhost - this avoids SSPI issues with IP addresses
-                //string localIP = GetLocalIPAddress();
-                return @"Data Source=localhost\KAMILIANURMALA;Initial Catalog=BiroWisataTry;Integrated Security=True;TrustServerCertificate=True;";
+                string localIP = GetLocalIPAddress();
+                //return @"Data Source=localhost\KAMILIANURMALA;Initial Catalog=BiroWisataTry;Integrated Security=True;TrustServerCertificate=True;";
                 //return $"Data Source={localIP}\\KAMILIANURMALA;Initial Catalog=BiroWisata;Integrated Security=True;TrustServerCertificate=True;";
                 //string computerName = Environment.MachineName;
                 //return $"Data Source={computerName}\\KAMILIANURMALA;Initial Catalog=BiroWisata;Integrated Security=True;TrustServerCertificate=True;";
@@ -20,6 +20,7 @@ namespace praktikum7
                 //return $@"Data Source={localIP}\KAMILIANURMALA;Initial Catalog=BiroWisataTry;Integrated Security=True;TrustServerCertificate=True;";
                 //return $@"Data Source={localIP}\KAMILIANURMALA;Initial Catalog=BiroWisataTry;User ID=sa;Password=90Yt56w@;TrustServerCertificate=True;";
                 //return $"Server={localIP}\\KAMILIANURMALA;Initial Catalog=BiroWisata;Integrated Security=True;TrustServerCertificate=True;";
+                return $@"Data Source={localIP}\KAMILIANURMALA;Initial Catalog=BiroWisataTry;Integrated Security=True;TrustServerCertificate=True;";
             }
             catch (Exception ex)
             {
