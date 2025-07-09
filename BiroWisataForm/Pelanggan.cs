@@ -75,6 +75,7 @@ namespace BiroWisataForm
         private void Pelanggan_Load(object sender, EventArgs e)
         {
             RefreshData();
+            ClearFields();
             // Ensure the SelectionChanged event is connected.
             // If you haven't done it in the designer, you can do it here:
             // this.dgvPelanggan.SelectionChanged += new System.EventHandler(this.dgvPelanggan_SelectionChanged);
@@ -442,7 +443,6 @@ namespace BiroWisataForm
             }
             int selectedId = Convert.ToInt32(dgvPelanggan.SelectedRows[0].Cells["colIDPelanggan"].Value);
 
-            // --- PERUBAHAN DI SINI ---
             // Panggil validasi dan tampilkan MessageBox jika gagal
             if (!ValidateInput())
             {
@@ -450,7 +450,15 @@ namespace BiroWisataForm
                                 MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return; // Hentikan proses jika validasi gagal
             }
-            // --- AKHIR PERUBAHAN ---
+
+            // *** TAMBAHAN BARU: Cek apakah ada perubahan data ***
+            if (!HasDataChanged())
+            {
+                MessageBox.Show("Tidak ada perubahan data untuk disimpan.", "Informasi",
+                                MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
+            // *** AKHIR TAMBAHAN ***
 
             // Cek data duplikat (untuk No. Telp, Email & Alamat)
             if (IsDataDuplikat(txtNoTelp.Text.Trim(), txtEmail.Text.Trim(), txtAlamat.Text.Trim(), selectedId))
@@ -459,6 +467,8 @@ namespace BiroWisataForm
                                 MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
+
+            // ... sisa kode tetap sama ...
 
             // --- MANAJEMEN TRANSAKSI (Kode ini tetap sama) ---
             using (SqlConnection conn = new SqlConnection(kn.connectionString()))
@@ -588,6 +598,57 @@ namespace BiroWisataForm
         private void dgvPelanggan_CellContentClick_1(object sender, DataGridViewCellEventArgs e)
         {
 
+        }
+
+        /// <summary>
+        /// Mengecek apakah ada perubahan data antara form input dengan data di grid
+        /// </summary>
+        /// <returns>True jika ada perubahan, False jika tidak ada perubahan</returns>
+        private bool HasDataChanged()
+        {
+            if (dgvPelanggan.SelectedRows.Count == 0) return false;
+
+            try
+            {
+                DataGridViewRow selectedRow = dgvPelanggan.SelectedRows[0];
+
+                // Ambil data dari grid (data asli) - gunakan fallback untuk kolom
+                string gridNama = "";
+                string gridAlamat = "";
+                string gridNoTelp = "";
+                string gridEmail = "";
+
+                // Cek nama kolom yang ada (designer vs auto-generated)
+                string namaColName = dgvPelanggan.Columns.Contains("colNamaPelanggan") ? "colNamaPelanggan" : "NamaPelanggan";
+                string alamatColName = dgvPelanggan.Columns.Contains("colAlamat") ? "colAlamat" : "Alamat";
+                string noTelpColName = dgvPelanggan.Columns.Contains("colNoTelp") ? "colNoTelp" : "NoTelp";
+                string emailColName = dgvPelanggan.Columns.Contains("colEmail") ? "colEmail" : "Email";
+
+                gridNama = selectedRow.Cells[namaColName].Value?.ToString() ?? "";
+                gridAlamat = selectedRow.Cells[alamatColName].Value?.ToString() ?? "";
+                gridNoTelp = selectedRow.Cells[noTelpColName].Value?.ToString() ?? "";
+                gridEmail = selectedRow.Cells[emailColName].Value?.ToString() ?? "";
+
+                // Ambil data dari form input (data yang akan disimpan)
+                string formNama = txtNama.Text.Trim();
+                string formAlamat = txtAlamat.Text.Trim();
+                string formNoTelp = txtNoTelp.Text.Trim();
+                string formEmail = txtEmail.Text.Trim();
+
+                // Bandingkan setiap field
+                bool namaChanged = gridNama != formNama;
+                bool alamatChanged = gridAlamat != formAlamat;
+                bool noTelpChanged = gridNoTelp != formNoTelp;
+                bool emailChanged = gridEmail != formEmail;
+
+                // Return true jika ada minimal 1 field yang berubah
+                return namaChanged || alamatChanged || noTelpChanged || emailChanged;
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error saat mengecek perubahan data: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return true; // Jika error, anggap ada perubahan untuk safety
+            }
         }
     }
 }

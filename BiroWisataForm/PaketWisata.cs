@@ -87,6 +87,7 @@ namespace BiroWisataForm
         private void PaketWisata_Load(object sender, EventArgs e)
         {
             RefreshData(); // Load data when form loads
+            ClearInputs();
             // Ensure SelectionChanged is connected in the designer
             // this.dgvPaketWisata.SelectionChanged += new System.EventHandler(this.DgvPaketWisata_SelectionChanged);
         }
@@ -341,9 +342,20 @@ namespace BiroWisataForm
 
             if (!ValidateInputs()) return;
 
+            // *** TAMBAHAN BARU: Cek apakah ada perubahan data ***
+            if (!HasDataChanged())
+            {
+                MessageBox.Show("Tidak ada perubahan data untuk disimpan.", "Informasi",
+                                MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
+            // *** AKHIR TAMBAHAN ***
+
             decimal.TryParse(txtHarga.Text.Trim(), out decimal harga);
             short.TryParse(txtDurasi.Text.Trim(), out short durasi);
             short.TryParse(txtKuota.Text.Trim(), out short kuota);
+
+            // ... sisa kode tetap sama ...
 
             // --- LOGIKA TRANSAKSI DIMULAI DI SINI ---
             SqlConnection conn = new SqlConnection(kn.connectionString());
@@ -653,6 +665,72 @@ namespace BiroWisataForm
             // { 
             //     ClearInputs(); 
             // }  <-- BLOK INI DIHAPUS
+        }
+
+        /// <summary>
+        /// Mengecek apakah ada perubahan data antara form input dengan data di grid
+        /// </summary>
+        /// <returns>True jika ada perubahan, False jika tidak ada perubahan</returns>
+        private bool HasDataChanged()
+        {
+            if (dgvPaketWisata.SelectedRows.Count == 0) return false;
+
+            try
+            {
+                DataGridViewRow selectedRow = dgvPaketWisata.SelectedRows[0];
+
+                // Ambil data dari grid (data asli)
+                var gridIdDriver = selectedRow.Cells["colIDDriver_hidden"].Value?.ToString();
+                var gridIdKendaraan = selectedRow.Cells["colIDKendaraan_hidden"].Value?.ToString();
+                var gridNamaPaket = selectedRow.Cells["colNamaPaket"].Value?.ToString();
+                var gridDestinasi = selectedRow.Cells["colDestinasi"].Value?.ToString();
+                var gridHarga = selectedRow.Cells["colHarga"].Value?.ToString();
+                var gridDurasi = selectedRow.Cells["colDurasi"].Value?.ToString();
+                var gridFasilitas = selectedRow.Cells["colFasilitas"].Value?.ToString();
+                var gridKategori = selectedRow.Cells["colKategori"].Value?.ToString();
+                var gridKuota = selectedRow.Cells["colKuota"].Value?.ToString();
+
+                // Format jadwal untuk perbandingan (hanya tanggal, bukan waktu)
+                var gridJadwal = "";
+                if (selectedRow.Cells["colJadwal"].Value != null && selectedRow.Cells["colJadwal"].Value != DBNull.Value)
+                {
+                    gridJadwal = Convert.ToDateTime(selectedRow.Cells["colJadwal"].Value).ToString("yyyy-MM-dd");
+                }
+
+                // Ambil data dari form input (data yang akan disimpan)
+                var formIdDriver = cmbDriver.SelectedValue?.ToString();
+                var formIdKendaraan = cmbKendaraan.SelectedValue?.ToString();
+                var formNamaPaket = txtNamaPaket.Text.Trim();
+                var formDestinasi = txtDestinasi.Text.Trim();
+                var formHarga = txtHarga.Text.Trim();
+                var formDurasi = txtDurasi.Text.Trim();
+                var formFasilitas = txtFasilitas.Text.Trim();
+                var formKategori = cmbKategori.SelectedItem?.ToString();
+                var formKuota = txtKuota.Text.Trim();
+                var formJadwal = dtpJadwalKeberangkatan.Value.ToString("yyyy-MM-dd");
+
+                // Bandingkan setiap field
+                bool driverChanged = gridIdDriver != formIdDriver;
+                bool kendaraanChanged = gridIdKendaraan != formIdKendaraan;
+                bool namaPaketChanged = gridNamaPaket != formNamaPaket;
+                bool destinasiChanged = gridDestinasi != formDestinasi;
+                bool hargaChanged = gridHarga != formHarga;
+                bool durasiChanged = gridDurasi != formDurasi;
+                bool fasilitasChanged = gridFasilitas != formFasilitas;
+                bool kategoriChanged = gridKategori != formKategori;
+                bool kuotaChanged = gridKuota != formKuota;
+                bool jadwalChanged = gridJadwal != formJadwal;
+
+                // Return true jika ada minimal 1 field yang berubah
+                return driverChanged || kendaraanChanged || namaPaketChanged || destinasiChanged ||
+                       hargaChanged || durasiChanged || fasilitasChanged || kategoriChanged ||
+                       kuotaChanged || jadwalChanged;
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error saat mengecek perubahan data: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return true; // Jika error, anggap ada perubahan untuk safety
+            }
         }
 
         private void DgvPaketWisata_CellClick(object sender, DataGridViewCellEventArgs e)

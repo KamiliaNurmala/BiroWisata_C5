@@ -46,25 +46,26 @@ namespace BiroWisataForm
             StyleButton(this.btnRefresh, Color.FromArgb(149, 165, 166), Color.White);
         }
 
+        // GANTI metode ini
         private void InitializeStatusComboBox()
         {
-            // Cari kontrol ComboBox dengan nama "cmbStatus" di form
             var foundControls = this.Controls.Find("cmbStatus", true);
             if (foundControls.Length > 0 && foundControls[0] is ComboBox)
             {
-                // Jika ditemukan, hubungkan ke variabel cmbStatus kita
                 this.cmbStatus = (ComboBox)foundControls[0];
 
-                // Sekarang aman untuk menggunakannya
                 this.cmbStatus.Items.Clear();
+                // 1. Tambahkan placeholder sebagai item pertama (di index 0)
+                this.cmbStatus.Items.Add("-- Pilih Status --");
                 this.cmbStatus.Items.Add("Aktif");
                 this.cmbStatus.Items.Add("Tidak Aktif");
                 this.cmbStatus.DropDownStyle = ComboBoxStyle.DropDownList;
+
+                // 2. Set default ke placeholder (yang sekarang ada di index 0)
                 if (this.cmbStatus.Items.Count > 0) this.cmbStatus.SelectedIndex = 0;
             }
             else
             {
-                // Opsional: Beri peringatan jika ComboBox tidak ditemukan
                 MessageBox.Show("Kontrol 'cmbStatus' tidak ditemukan di form designer.", "Peringatan UI", MessageBoxButtons.OK, MessageBoxIcon.Warning);
             }
         }
@@ -89,6 +90,7 @@ namespace BiroWisataForm
         {
             // Panggil RefreshData tanpa parameter kedua agar isSearching bernilai false
             RefreshData();
+            ClearFields();
         }
 
         // --- Perbaiki Inisialisasi DataGridView ---
@@ -344,6 +346,35 @@ namespace BiroWisataForm
                 return;
             }
 
+            // TAMBAHAN BARU: Cek apakah ada perubahan data dari selected row
+            if (dgvDriver.SelectedRows.Count > 0)
+            {
+                DataGridViewRow selectedRow = dgvDriver.SelectedRows[0];
+
+                // Ambil data lama dari grid
+                string namaLama = selectedRow.Cells["NamaDriver"].Value?.ToString() ?? "";
+                string noTelpLama = selectedRow.Cells["NoTelp"].Value?.ToString() ?? "";
+                string noSimLama = selectedRow.Cells["NoSIM"].Value?.ToString() ?? "";
+                string statusLama = selectedRow.Cells["Status"].Value?.ToString() ?? "";
+
+                // Ambil data baru dari form
+                string namaBaru = txtNama.Text.Trim();
+                string noTelpBaru = txtNoTel.Text.Trim();
+                string noSimBaru = txtNoSim.Text.Trim();
+                string statusBaru = this.cmbStatus.SelectedItem?.ToString() ?? "";
+
+                // Bandingkan data lama dengan data baru
+                if (namaLama == namaBaru &&
+                    noTelpLama == noTelpBaru &&
+                    noSimLama == noSimBaru &&
+                    statusLama == statusBaru)
+                {
+                    MessageBox.Show("Tidak ada perubahan data yang terdeteksi. Silakan ubah minimal satu field jika ingin menyimpan perubahan.",
+                                    "Tidak Ada Perubahan", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    return;
+                }
+            }
+
             using (SqlConnection conn = new SqlConnection(kn.connectionString()))
             {
                 SqlTransaction transaction = null;
@@ -394,13 +425,14 @@ namespace BiroWisataForm
                 MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
 
+        // Metode ini sudah benar setelah Langkah 1
         private void ClearFields()
         {
             txtNama.Clear();
             txtNoTel.Clear();
             txtNoSim.Clear();
-            selectedDriverId = -1; // Reset ID terpilih
-            if (cmbStatus.Items.Count > 0) cmbStatus.SelectedIndex = 0; // Reset status
+            selectedDriverId = -1;
+            if (cmbStatus.Items.Count > 0) cmbStatus.SelectedIndex = 0; // Ini akan memilih "--Pilih Status--"
             dgvDriver.ClearSelection();
             txtNama.Focus();
         }
@@ -482,7 +514,7 @@ namespace BiroWisataForm
             txtNoTel.Text = row.Cells["NoTelp"].Value?.ToString() ?? "";
             txtNoSim.Text = row.Cells["NoSIM"].Value?.ToString() ?? "";
 
-            string statusValue = row.Cells["Status"].Value?.ToString() ?? "Aktif";
+            string statusValue = row.Cells["Status"].Value?.ToString() ?? "-- Pilih Status --";
 
             // Pastikan cmbStatus tidak null sebelum digunakan
             if (this.cmbStatus != null)
@@ -527,6 +559,11 @@ namespace BiroWisataForm
                 // Panggil RefreshData dengan parameter kedua true untuk menandakan ini adalah proses pencarian
                 RefreshData(searchBox.Text, true);
             }
+        }
+
+        private void cmbStatus_SelectedIndexChanged(object sender, EventArgs e)
+        {
+
         }
 
         // private void TxtSearch_TextChanged(object sender, EventArgs e)

@@ -26,6 +26,7 @@ namespace BiroWisataForm
         private void Kendaraan_Load(object sender, EventArgs e)
         {
             RefreshData();
+            ClearFields();
             // Ensure SelectionChanged is connected in designer, or do it here:
             // this.dgvKendaraan.SelectionChanged += new System.EventHandler(this.dgvKendaraan_SelectionChanged);
         }
@@ -226,6 +227,18 @@ namespace BiroWisataForm
                 this.errorProvider1.SetError(txtJenis, "Jenis kendaraan harus diisi!");
                 isValid = false;
             }
+            // --- VALIDASI: JENIS KENDARAAN TIDAK BOLEH MENGANDUNG ANGKA ---
+            else if (System.Text.RegularExpressions.Regex.IsMatch(txtJenis.Text, @"\d"))
+            {
+                this.errorProvider1.SetError(txtJenis, "Jenis kendaraan tidak boleh mengandung angka!");
+                isValid = false;
+            }
+            // --- VALIDASI: HANYA HURUF, SPASI, DAN BEBERAPA KARAKTER KHUSUS ---
+            else if (!System.Text.RegularExpressions.Regex.IsMatch(txtJenis.Text, @"^[a-zA-Z\s\-\.]+$"))
+            {
+                this.errorProvider1.SetError(txtJenis, "Jenis kendaraan hanya boleh berisi huruf, spasi, tanda hubung (-), dan titik (.)!");
+                isValid = false;
+            }
 
             if (string.IsNullOrWhiteSpace(txtPlatNomor.Text))
             {
@@ -246,35 +259,15 @@ namespace BiroWisataForm
             }
             else if (!short.TryParse(txtKapasitas.Text, out short kapasitasVal) || kapasitasVal <= 0)
             {
-                // This covers two cases:
-                // 1. Not a valid short number (e.g., text, too large/small for short)
-                // 2. A valid short number, but it's not positive (e.g., 0 or -5)
                 this.errorProvider1.SetError(txtKapasitas, "Kapasitas harus berupa angka positif (bilangan bulat kecil)!");
                 isValid = false;
             }
-            // --- END OF CORRECTED KAPASITAS VALIDATION ---
 
-            if (this.Controls.Find("cmbStatus", true).FirstOrDefault() is ComboBox cmb && cmb.SelectedIndex < 0)
+            // --- STATUS VALIDATION ---
+            if (this.Controls.Find("cmbStatus", true).FirstOrDefault() is ComboBox cmbStatusControl && cmbStatusControl.SelectedItem == null)
             {
-                // It's better to check if SelectedIndex is the placeholder index (usually 0 if you have one)
-                // or if SelectedItem is null, depending on how you set up your placeholder.
-                // For a DropDownList, SelectedIndex < 0 is unlikely if it has items and one is selected.
-                // If your placeholder is the first item (index 0):
-                // if (this.Controls.Find("cmbStatus", true).FirstOrDefault() is ComboBox cmb && cmb.SelectedIndex == 0 && cmb.Items[0].ToString().StartsWith("--"))
-                // Or more simply if no placeholder:
-                if (this.Controls.Find("cmbStatus", true).FirstOrDefault() is ComboBox cmbStatusControl && cmbStatusControl.SelectedItem == null)
-                {
-                    this.errorProvider1.SetError(cmbStatusControl, "Status harus dipilih!");
-                    isValid = false;
-                }
-                // However, since your InitializeStatusComboBox always selects an item if count > 0,
-                // this check might only be relevant if cmbStatus is somehow cleared or fails to initialize.
-                // A simpler check if you ensure it's always populated and selected:
-                // if (this.Controls.Find("cmbStatus", true).FirstOrDefault() is ComboBox cmb && string.IsNullOrEmpty(cmb.SelectedItem?.ToString()))
-                // {
-                //     this.errorProvider1.SetError(cmb, "Status harus dipilih!"); 
-                //     isValid = false; 
-                // }
+                this.errorProvider1.SetError(cmbStatusControl, "Status harus dipilih!");
+                isValid = false;
             }
 
             return isValid;
@@ -285,8 +278,8 @@ namespace BiroWisataForm
             // 1. Validasi semua input terlebih dahulu
             if (!ValidateInput())
             {
-                MessageBox.Show("Harap perbaiki kesalahan input sebelum menyimpan.", "Validasi Gagal",
-                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show("Harap perbaiki kesalahan input yang ditandai dengan tanda seru merah!",
+                                "Validasi Gagal", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
 
@@ -300,25 +293,19 @@ namespace BiroWisataForm
                 return;
             }
 
-            // 3. Siapkan data lainnya
-            if (!short.TryParse(txtKapasitas.Text, out short kapasitasVal) || kapasitasVal <= 0)
-            {
-                errorProvider1.SetError(txtKapasitas, "Kapasitas harus berupa angka positif yang valid.");
-                MessageBox.Show("Kapasitas tidak valid. Harap masukkan angka positif.", "Validasi Gagal", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                return;
-            }
+            // 3. Siapkan data (validasi sudah dilakukan di ValidateInput)
+            short kapasitasVal = short.Parse(txtKapasitas.Text); // Aman karena sudah divalidasi
             string status = (this.Controls.Find("cmbStatus", true).FirstOrDefault() as ComboBox)?.SelectedItem.ToString() ?? "Aktif";
 
             // 4. Proses penyimpanan data ke database dengan transaksi
             using (SqlConnection conn = new SqlConnection(kn.connectionString()))
             {
                 conn.Open();
-                // --- PERUBAHAN DIMULAI DI SINI ---
-                SqlTransaction transaction = conn.BeginTransaction(); // 1. Memulai transaksi
+                SqlTransaction transaction = conn.BeginTransaction();
 
                 try
                 {
-                    using (SqlCommand cmd = new SqlCommand("sp_AddKendaraan", conn, transaction)) // 2. Kaitkan command dengan transaksi
+                    using (SqlCommand cmd = new SqlCommand("sp_AddKendaraan", conn, transaction))
                     {
                         cmd.CommandType = CommandType.StoredProcedure;
 
@@ -331,18 +318,14 @@ namespace BiroWisataForm
                         cmd.ExecuteNonQuery();
                     }
 
-                    transaction.Commit(); // 3. Commit transaksi jika semua berhasil
-
+                    transaction.Commit();
                     MessageBox.Show("Data kendaraan berhasil ditambahkan!", "Sukses",
                         MessageBoxButtons.OK, MessageBoxIcon.Information);
-
                     RefreshData();
                 }
                 catch (Exception ex)
                 {
-                    transaction.Rollback(); // 4. Rollback transaksi jika terjadi kesalahan
-
-                    // Tampilkan pesan error
+                    transaction.Rollback();
                     if (ex is SqlException sqlEx)
                     {
                         MessageBox.Show($"Error Database saat menambahkan data: {sqlEx.Message}\nNomor Kesalahan: {sqlEx.Number}", "Database Error",
@@ -354,7 +337,6 @@ namespace BiroWisataForm
                             MessageBoxButtons.OK, MessageBoxIcon.Error);
                     }
                 }
-                // --- AKHIR PERUBAHAN ---
             }
         }
 
@@ -423,8 +405,8 @@ namespace BiroWisataForm
             // 2. Lakukan validasi input
             if (!ValidateInput())
             {
-                MessageBox.Show("Harap perbaiki kesalahan input sebelum menyimpan.", "Validasi Gagal",
-                   MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show("Harap perbaiki kesalahan input yang ditandai dengan tanda seru merah!",
+                                "Validasi Gagal", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
 
@@ -441,51 +423,62 @@ namespace BiroWisataForm
                 return;
             }
 
-            // 5. Siapkan data lainnya
-            if (!short.TryParse(txtKapasitas.Text, out short kapasitasVal) || kapasitasVal <= 0)
+            // 5. BARU: Cek apakah ada perubahan data
+            DataGridViewRow selectedRow = dgvKendaraan.SelectedRows[0];
+            string jenisLama = selectedRow.Cells["colJenis"].Value?.ToString() ?? "";
+            string platLama = selectedRow.Cells["colPlatNomor"].Value?.ToString() ?? "";
+            string kapasitasLama = selectedRow.Cells["colKapasitas"].Value?.ToString() ?? "";
+            string statusLama = selectedRow.Cells["colStatus"].Value?.ToString() ?? "";
+
+            string jenisBaru = txtJenis.Text.Trim();
+            string platBaru = txtPlatNomor.Text.Trim();
+            string kapasitasBaru = txtKapasitas.Text.Trim();
+            string statusBaru = (this.Controls.Find("cmbStatus", true).FirstOrDefault() as ComboBox)?.SelectedItem?.ToString() ?? "Aktif";
+
+            // Bandingkan data lama dengan data baru
+            if (jenisLama == jenisBaru &&
+                platLama == platBaru &&
+                kapasitasLama == kapasitasBaru &&
+                statusLama == statusBaru)
             {
-                errorProvider1.SetError(txtKapasitas, "Kapasitas harus berupa angka positif yang valid.");
-                MessageBox.Show("Kapasitas tidak valid. Harap masukkan angka positif.", "Tipe Data Salah",
-                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show("Tidak ada perubahan data yang terdeteksi. Silakan ubah minimal satu field jika ingin menyimpan perubahan.",
+                                "Tidak Ada Perubahan", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 return;
             }
-            string status = (this.Controls.Find("cmbStatus", true).FirstOrDefault() as ComboBox)?.SelectedItem.ToString() ?? "Aktif";
 
-            // 6. Jalankan proses update ke database dengan transaksi
+            // 6. Siapkan data (validasi sudah dilakukan di ValidateInput)
+            short kapasitasVal = short.Parse(txtKapasitas.Text); // Aman karena sudah divalidasi
+
+            // 7. Jalankan proses update ke database dengan transaksi
             using (SqlConnection conn = new SqlConnection(kn.connectionString()))
             {
                 conn.Open();
-                // --- PERUBAHAN DIMULAI DI SINI ---
-                SqlTransaction transaction = conn.BeginTransaction(); // 1. Memulai transaksi
+                SqlTransaction transaction = conn.BeginTransaction();
 
                 try
                 {
-                    using (SqlCommand cmd = new SqlCommand("sp_UpdateKendaraan", conn, transaction)) // 2. Kaitkan command dengan transaksi
+                    using (SqlCommand cmd = new SqlCommand("sp_UpdateKendaraan", conn, transaction))
                     {
                         cmd.CommandType = CommandType.StoredProcedure;
 
                         cmd.Parameters.AddWithValue("@IDKendaraan", selectedId);
-                        cmd.Parameters.AddWithValue("@Jenis", txtJenis.Text.Trim());
-                        cmd.Parameters.AddWithValue("@PlatNomor", platNomor);
+                        cmd.Parameters.AddWithValue("@Jenis", jenisBaru);
+                        cmd.Parameters.AddWithValue("@PlatNomor", platBaru);
                         cmd.Parameters.AddWithValue("@Kapasitas", kapasitasVal);
-                        cmd.Parameters.AddWithValue("@Status", status);
+                        cmd.Parameters.AddWithValue("@Status", statusBaru);
                         cmd.Parameters.AddWithValue("@UpdatedBy", Environment.UserName);
 
                         cmd.ExecuteNonQuery();
                     }
 
-                    transaction.Commit(); // 3. Commit transaksi jika berhasil
-
+                    transaction.Commit();
                     MessageBox.Show("Data kendaraan berhasil diubah.", "Sukses",
                         MessageBoxButtons.OK, MessageBoxIcon.Information);
-
                     RefreshData();
                 }
                 catch (Exception ex)
                 {
-                    transaction.Rollback(); // 4. Rollback transaksi jika terjadi kesalahan
-
-                    // Tampilkan pesan error
+                    transaction.Rollback();
                     if (ex is SqlException sqlEx)
                     {
                         MessageBox.Show($"Error Database saat mengubah data: {sqlEx.Message}\nNomor Kesalahan: {sqlEx.Number}", "Database Error",
@@ -497,7 +490,6 @@ namespace BiroWisataForm
                             MessageBoxButtons.OK, MessageBoxIcon.Error);
                     }
                 }
-                // --- AKHIR PERUBAHAN ---
             }
         }
 

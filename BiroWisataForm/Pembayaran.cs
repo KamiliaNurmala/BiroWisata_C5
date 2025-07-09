@@ -464,6 +464,15 @@ namespace BiroWisataForm
 
             if (!ValidateInputsForUpdate()) return;
 
+            // *** TAMBAHAN BARU: Cek apakah ada perubahan data ***
+            if (!HasDataChanged())
+            {
+                MessageBox.Show("Tidak ada perubahan data untuk disimpan.", "Informasi",
+                                MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
+            // *** AKHIR TAMBAHAN ***
+
             try
             {
                 using (var conn = new SqlConnection(kn.connectionString()))
@@ -476,8 +485,6 @@ namespace BiroWisataForm
                         cmd.Parameters.AddWithValue("@TanggalPembayaran", dateTimePicker1.Value);
                         cmd.Parameters.AddWithValue("@MetodePembayaran", comboBoxMetode.SelectedItem.ToString());
 
-                        // --- PERUBAHAN DI SINI ---
-                        // Hapus kondisi 'if' dan 'else'.
                         cmd.ExecuteNonQuery();
 
                         MessageBox.Show("Data pembayaran berhasil diubah.", "Sukses", MessageBoxButtons.OK, MessageBoxIcon.Information);
@@ -489,7 +496,6 @@ namespace BiroWisataForm
             catch (SqlException ex) { HandleSqlError(ex, "mengubah pembayaran"); }
             catch (Exception ex) { HandleGeneralError("mengubah pembayaran", ex); }
         }
-
 
         private void btnHapus_Click(object sender, EventArgs e)
         {
@@ -736,6 +742,48 @@ namespace BiroWisataForm
                 DateTime pembayaranEnd = dtpPembayaranFilterEnd.Value;
 
                 RefreshData(searchBox.Text, pemesananStart, pemesananEnd, pembayaranStart, pembayaranEnd);
+            }
+        }
+
+        /// <summary>
+        /// Mengecek apakah ada perubahan data antara form input dengan data di grid
+        /// </summary>
+        /// <returns>True jika ada perubahan, False jika tidak ada perubahan</returns>
+        private bool HasDataChanged()
+        {
+            if (dgvPembayaran.SelectedRows.Count == 0 || selectedPembayaranId < 0) return false;
+
+            try
+            {
+                DataGridViewRow selectedRow = dgvPembayaran.SelectedRows[0];
+
+                // Ambil data dari grid (data asli)
+                var gridMetodePembayaran = selectedRow.Cells["colMetodePembayaran"].Value?.ToString();
+
+                // Format tanggal untuk perbandingan (hingga menit, karena pembayaran biasanya mencatat jam)
+                var gridTanggalPembayaran = "";
+                if (selectedRow.Cells["colTanggalPembayaran"].Value != null && selectedRow.Cells["colTanggalPembayaran"].Value != DBNull.Value)
+                {
+                    gridTanggalPembayaran = Convert.ToDateTime(selectedRow.Cells["colTanggalPembayaran"].Value).ToString("yyyy-MM-dd HH:mm");
+                }
+
+                // Ambil data dari form input (data yang akan disimpan)
+                var formMetodePembayaran = comboBoxMetode.SelectedItem?.ToString();
+                var formTanggalPembayaran = dateTimePicker1.Value.ToString("yyyy-MM-dd HH:mm");
+
+                // Bandingkan setiap field yang bisa diubah
+                // Note: Pada form Pembayaran, biasanya hanya Tanggal dan Metode yang bisa diubah
+                // JumlahPembayaran dan IDPemesanan biasanya tidak diubah untuk menjaga integritas data
+                bool metodeChanged = gridMetodePembayaran != formMetodePembayaran;
+                bool tanggalChanged = gridTanggalPembayaran != formTanggalPembayaran;
+
+                // Return true jika ada minimal 1 field yang berubah
+                return metodeChanged || tanggalChanged;
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error saat mengecek perubahan data: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return true; // Jika error, anggap ada perubahan untuk safety
             }
         }
     }

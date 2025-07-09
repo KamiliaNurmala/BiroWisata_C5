@@ -10,9 +10,8 @@ namespace praktikum7
         {
             try
             {
-                // Use computer name instead of IP
-                string computerName = Environment.MachineName;
-                return $@"Data Source={computerName}\KAMILIANURMALA;Initial Catalog=BiroWisataTry;Integrated Security=True;TrustServerCertificate=True;";
+                string localIP = GetLocalIPAddress();
+                return $@"Data Source={localIP}\KAMILIANURMALA;Initial Catalog=BiroWisataTry;Integrated Security=True;TrustServerCertificate=True;";
             }
             catch (Exception ex)
             {
