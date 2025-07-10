@@ -234,6 +234,10 @@ namespace BiroWisataForm
 
         private void btnFilter_Click(object sender, EventArgs e)
         {
+            // START TIMER
+            System.Diagnostics.Stopwatch sw = new System.Diagnostics.Stopwatch();
+            sw.Start();
+
             DateTime pemesananStart = dtpPemesananFilterStart.Value;
             DateTime pemesananEnd = dtpPemesananFilterEnd.Value;
             DateTime pembayaranStart = dtpPembayaranFilterStart.Value;
@@ -242,29 +246,54 @@ namespace BiroWisataForm
             if (pemesananStart.Date > pemesananEnd.Date) { MessageBox.Show("Tanggal Awal Filter Pemesanan tidak boleh melebihi Tanggal Akhir.", "Filter Error", MessageBoxButtons.OK, MessageBoxIcon.Warning); return; }
             if (pembayaranStart.Date > pembayaranEnd.Date) { MessageBox.Show("Tanggal Awal Filter Pembayaran tidak boleh melebihi Tanggal Akhir.", "Filter Error", MessageBoxButtons.OK, MessageBoxIcon.Warning); return; }
 
-            // Asumsikan nama kotak pencarian Anda adalah "textBox1"
-            // Jika namanya beda, sesuaikan "textBox1" di bawah ini
             RefreshData(textBox1.Text, pemesananStart, pemesananEnd, pembayaranStart, pembayaranEnd);
+
+            // STOP TIMER & TAMPILKAN
+            sw.Stop();
+            double seconds = sw.Elapsed.TotalSeconds;
+            string status = seconds < 2.0 ? "✅ PASS" : "❌ GAGAL";
+
+            MessageBox.Show($"🔍 Filter Data Performance:\n" +
+                           $"Waktu: {seconds:F2} detik\n" +
+                           $"Target: < 2 detik\n" +
+                           $"Status: {status}\n\n" +
+                           $"Filter berhasil diterapkan!",
+                           "Filter Complete",
+                           MessageBoxButtons.OK,
+                           MessageBoxIcon.Information);
         }
 
         private void btnRefresh_Click(object sender, EventArgs e)
         {
+            // START TIMER
+            System.Diagnostics.Stopwatch sw = new System.Diagnostics.Stopwatch();
+            sw.Start();
+
             // Reset filter
             dtpPemesananFilterStart.Value = new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1);
             dtpPemesananFilterEnd.Value = DateTime.Now.Date;
             dtpPembayaranFilterStart.Value = new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1);
             dtpPembayaranFilterEnd.Value = DateTime.Now.Date;
 
-            // --- PERUBAHAN DI SINI ---
-            // Panggil RefreshData dan periksa hasilnya
             if (RefreshData(null, null, null, null))
             {
-                // Jika sukses, baru jalankan sisanya dan tampilkan pesan
                 ClearInputs();
-                LoadPemesananForComboBox(); // Muat ulang untuk mencerminkan status terbaru
-                MessageBox.Show("Data diperbarui dan filter dihapus.", "Refresh", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                LoadPemesananForComboBox();
+
+                // STOP TIMER & TAMPILKAN
+                sw.Stop();
+                double seconds = sw.Elapsed.TotalSeconds;
+                string status = seconds < 3.0 ? "✅ PASS" : "❌ GAGAL";
+
+                MessageBox.Show($"📊 Load Data Performance:\n" +
+                               $"Waktu: {seconds:F2} detik\n" +
+                               $"Target: < 3 detik\n" +
+                               $"Status: {status}\n\n" +
+                               $"Data berhasil diperbarui!",
+                               "Refresh Complete",
+                               MessageBoxButtons.OK,
+                               MessageBoxIcon.Information);
             }
-            // Jika gagal, RefreshData() sudah menampilkan pesan errornya sendiri.
         }
 
         private void DgvPembayaran_CellClick(object sender, DataGridViewCellEventArgs e)
@@ -324,11 +353,13 @@ namespace BiroWisataForm
             }
         }
 
-        // Ganti metode ini di Pembayaran.cs
-        // Ganti metode ini di file Pembayaran.cs
         private void btnTambah_Click(object sender, EventArgs e)
         {
             if (!ValidateInputsForAdd(out decimal jumlahPembayaran, out int idPemesanan, out decimal totalTagihan)) return;
+
+            // START TIMER
+            System.Diagnostics.Stopwatch sw = new System.Diagnostics.Stopwatch();
+            sw.Start();
 
             SqlConnection conn = new SqlConnection(kn.connectionString());
             SqlTransaction transaction = null;
@@ -379,22 +410,32 @@ namespace BiroWisataForm
                 // Commit transaksi jika semua berhasil
                 transaction.Commit();
 
-                MessageBox.Show("Pembayaran berhasil ditambahkan.", "Sukses", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                // STOP TIMER & TAMPILKAN
+                sw.Stop();
+                double seconds = sw.Elapsed.TotalSeconds;
+                string status = seconds < 2.0 ? "✅ PASS" : "❌ GAGAL";
+
+                MessageBox.Show($"💾 Save Transaction Performance:\n" +
+                               $"Waktu: {seconds:F2} detik\n" +
+                               $"Target: < 2 detik\n" +
+                               $"Status: {status}\n\n" +
+                               $"Pembayaran berhasil ditambahkan!",
+                               "Save Complete",
+                               MessageBoxButtons.OK,
+                               MessageBoxIcon.Information);
+
                 RefreshData(null, null, null, null);
                 LoadPemesananForComboBox();
                 ClearInputs();
             }
             catch (Exception ex)
             {
-                // --- PERUBAHAN DI SINI ---
-                // Rollback dipanggil langsung. Tanda tanya (?) memastikan program tidak error
-                // jika 'transaction' belum sempat dibuat (null).
+                sw.Stop();
                 transaction?.Rollback();
                 MessageBox.Show($"Terjadi kesalahan, semua perubahan dibatalkan: {ex.Message}", "Transaksi Gagal", MessageBoxButtons.OK, MessageBoxIcon.Warning);
             }
             finally
             {
-                // Selalu tutup koneksi
                 if (conn.State == ConnectionState.Open)
                 {
                     conn.Close();
@@ -710,6 +751,124 @@ namespace BiroWisataForm
                 DateTime pembayaranEnd = dtpPembayaranFilterEnd.Value;
 
                 RefreshData(searchBox.Text, pemesananStart, pemesananEnd, pembayaranStart, pembayaranEnd);
+            }
+        }
+
+        private async void btnTestLoadData_Click(object sender, EventArgs e)
+        {
+            System.Diagnostics.Stopwatch sw = new System.Diagnostics.Stopwatch();
+            sw.Start();
+
+            try
+            {
+                // Test operasi refresh normal
+                RefreshData(null, null, null, null);
+
+                sw.Stop();
+                double seconds = sw.Elapsed.TotalSeconds;
+                string status = seconds < 3.0 ? "PASS ✅" : "GAGAL ❌";
+
+                MessageBox.Show($"🔄 Test Load Data:\n" +
+                               $"Waktu: {seconds:F2} detik\n" +
+                               $"Target: < 3 detik\n" +
+                               $"Status: {status}",
+                               "Performance Test - Load Data",
+                               MessageBoxButtons.OK,
+                               MessageBoxIcon.Information);
+            }
+            catch (Exception ex)
+            {
+                sw.Stop();
+                MessageBox.Show($"❌ Test Load Data Gagal:\n{ex.Message}",
+                               "Error Test", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private async void btnTestFilterData_Click(object sender, EventArgs e)
+        {
+            System.Diagnostics.Stopwatch sw = new System.Diagnostics.Stopwatch();
+            sw.Start();
+
+            try
+            {
+                // Test operasi filter normal
+                DateTime start = new DateTime(2024, 1, 1);
+                DateTime end = DateTime.Now;
+                RefreshData("Transfer", start, end, start, end);
+
+                sw.Stop();
+                double seconds = sw.Elapsed.TotalSeconds;
+                string status = seconds < 2.0 ? "PASS ✅" : "GAGAL ❌";
+
+                MessageBox.Show($"🔍 Test Filter Data:\n" +
+                               $"Waktu: {seconds:F2} detik\n" +
+                               $"Target: < 2 detik\n" +
+                               $"Status: {status}",
+                               "Performance Test - Filter Data",
+                               MessageBoxButtons.OK,
+                               MessageBoxIcon.Information);
+            }
+            catch (Exception ex)
+            {
+                sw.Stop();
+                MessageBox.Show($"❌ Test Filter Data Gagal:\n{ex.Message}",
+                               "Error Test", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private async void btnTestSaveTransaction_Click(object sender, EventArgs e)
+        {
+            System.Diagnostics.Stopwatch sw = new System.Diagnostics.Stopwatch();
+            sw.Start();
+
+            SqlConnection conn = new SqlConnection(connectionString);
+            SqlTransaction transaction = null;
+
+            try
+            {
+                conn.Open();
+                transaction = conn.BeginTransaction();
+
+                // Test insert 10 dummy records (akan di-rollback)
+                for (int i = 1; i <= 10; i++)
+                {
+                    string query = @"INSERT INTO Pembayaran (IDPemesanan, JumlahPembayaran, TanggalPembayaran, MetodePembayaran)
+                                   SELECT TOP 1 IDPemesanan, 50000, GETDATE(), 'Transfer' 
+                                   FROM Pemesanan WHERE StatusPembayaran = 'Belum Bayar'";
+
+                    using (SqlCommand cmd = new SqlCommand(query, conn, transaction))
+                    {
+                        cmd.ExecuteNonQuery();
+                    }
+                }
+
+                // ROLLBACK - data tidak benar-benar disimpan
+                transaction.Rollback();
+
+                sw.Stop();
+                double seconds = sw.Elapsed.TotalSeconds;
+                string status = seconds < 2.0 ? "PASS ✅" : "GAGAL ❌";
+
+                MessageBox.Show($"💾 Test Simpan Transaksi:\n" +
+                               $"Waktu: {seconds:F2} detik (10 record test)\n" +
+                               $"Target: < 2 detik\n" +
+                               $"Status: {status}\n" +
+                               $"⚠️ Data test tidak disimpan (rollback)",
+                               "Performance Test - Save Transaction",
+                               MessageBoxButtons.OK,
+                               MessageBoxIcon.Information);
+            }
+            catch (Exception ex)
+            {
+                sw.Stop();
+                transaction?.Rollback();
+                MessageBox.Show($"❌ Test Simpan Transaksi Gagal:\n{ex.Message}",
+                               "Error Test", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+            finally
+            {
+                if (conn.State == ConnectionState.Open)
+                    conn.Close();
             }
         }
     }
