@@ -568,9 +568,10 @@ namespace BiroWisataForm
                 errorMsg += "- Destinasi tidak boleh kosong.\n";
                 isValid = false;
             }
-            else if (!System.Text.RegularExpressions.Regex.IsMatch(txtDestinasi.Text, @"^[a-zA-Z\s]+$"))
+            // Regex diubah untuk mengizinkan koma (,)
+            else if (!System.Text.RegularExpressions.Regex.IsMatch(txtDestinasi.Text, @"^[a-zA-Z\s,]+$"))
             {
-                errorMsg += "- Destinasi hanya boleh berisi huruf dan spasi.\n";
+                errorMsg += "- Destinasi hanya boleh berisi huruf, spasi, dan koma.\n";
                 isValid = false;
             }
 
