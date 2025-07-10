@@ -118,5 +118,10 @@ namespace BiroWisataForm
             // dan mengembalikan kontrol ke form yang membukanya (yaitu MenuAdmin).
             this.Close();
         }
+
+        private void label1_Click(object sender, EventArgs e)
+        {
+
+        }
     }
 }
