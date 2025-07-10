@@ -46,26 +46,25 @@ namespace BiroWisataForm
             StyleButton(this.btnRefresh, Color.FromArgb(149, 165, 166), Color.White);
         }
 
-        // GANTI metode ini
         private void InitializeStatusComboBox()
         {
+            // Cari kontrol ComboBox dengan nama "cmbStatus" di form
             var foundControls = this.Controls.Find("cmbStatus", true);
             if (foundControls.Length > 0 && foundControls[0] is ComboBox)
             {
+                // Jika ditemukan, hubungkan ke variabel cmbStatus kita
                 this.cmbStatus = (ComboBox)foundControls[0];
 
+                // Sekarang aman untuk menggunakannya
                 this.cmbStatus.Items.Clear();
-                // 1. Tambahkan placeholder sebagai item pertama (di index 0)
-                this.cmbStatus.Items.Add("-- Pilih Status --");
                 this.cmbStatus.Items.Add("Aktif");
                 this.cmbStatus.Items.Add("Tidak Aktif");
                 this.cmbStatus.DropDownStyle = ComboBoxStyle.DropDownList;
-
-                // 2. Set default ke placeholder (yang sekarang ada di index 0)
                 if (this.cmbStatus.Items.Count > 0) this.cmbStatus.SelectedIndex = 0;
             }
             else
             {
+                // Opsional: Beri peringatan jika ComboBox tidak ditemukan
                 MessageBox.Show("Kontrol 'cmbStatus' tidak ditemukan di form designer.", "Peringatan UI", MessageBoxButtons.OK, MessageBoxIcon.Warning);
             }
         }
@@ -88,9 +87,9 @@ namespace BiroWisataForm
         // GANTI METODE INI
         private void Driver_Load_1(object sender, EventArgs e)
         {
+
             // Panggil RefreshData tanpa parameter kedua agar isSearching bernilai false
             RefreshData();
-            ClearFields();
         }
 
         // --- Perbaiki Inisialisasi DataGridView ---
@@ -192,24 +191,32 @@ namespace BiroWisataForm
 
         private void BtnTambah_Click(object sender, EventArgs e)
         {
-            if (!ValidateInputFields()) return;
+            // Langkah 1: Validasi semua input
+            if (!ValidateInputFields())
+            {
+                // Jika validasi gagal, tampilkan satu pesan umum dan hentikan proses
+                MessageBox.Show("Harap perbaiki data yang tidak valid sebelum menyimpan.", "Validasi Gagal", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            // Langkah 2: Cek apakah data duplikat (No. Telp atau SIM)
             if (IsDriverDuplikat(txtNoTel.Text.Trim(), txtNoSim.Text.Trim()))
             {
                 MessageBox.Show("Nomor Telepon atau Nomor SIM sudah terdaftar.", "Data Duplikat", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
 
-            // Gunakan 'using' untuk memastikan koneksi selalu ditutup, bahkan saat error
+            // Langkah 3: Jika semua validasi lolos, lanjutkan proses simpan ke database
             using (SqlConnection conn = new SqlConnection(kn.connectionString()))
             {
-                SqlTransaction transaction = null; // Inisialisasi transaksi di luar try-catch
+                SqlTransaction transaction = null;
 
                 try
                 {
                     conn.Open();
-                    transaction = conn.BeginTransaction(); // 1. Mulai transaksi
+                    transaction = conn.BeginTransaction();
 
-                    using (SqlCommand cmd = new SqlCommand("sp_AddDriver", conn, transaction)) // 2. Sertakan transaksi di command
+                    using (SqlCommand cmd = new SqlCommand("sp_AddDriver", conn, transaction))
                     {
                         cmd.CommandType = CommandType.StoredProcedure;
                         cmd.Parameters.AddWithValue("@NamaDriver", txtNama.Text.Trim());
@@ -219,14 +226,14 @@ namespace BiroWisataForm
                         cmd.ExecuteNonQuery();
                     }
 
-                    transaction.Commit(); // 3. Jika semua berhasil, commit transaksi
+                    transaction.Commit();
                     MessageBox.Show("Data driver berhasil ditambahkan!", "Sukses", MessageBoxButtons.OK, MessageBoxIcon.Information);
 
-                    RefreshData();
+                    RefreshData(); // Muat ulang data dan bersihkan form
                 }
                 catch (Exception ex)
                 {
-                    transaction?.Rollback(); // 4. Jika terjadi error, rollback semua perubahan
+                    transaction?.Rollback();
                     MessageBox.Show($"Operasi gagal, semua perubahan dibatalkan.\n\nError: {ex.Message}", "Transaksi Gagal", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
             }
@@ -334,57 +341,55 @@ namespace BiroWisataForm
 
         private void BtnUbah_Click(object sender, EventArgs e)
         {
+            // Langkah 1: Pastikan ada driver yang dipilih
             if (selectedDriverId < 0)
             {
                 MessageBox.Show("Pilih driver yang ingin diubah!", "Peringatan", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
-            if (!ValidateInputFields()) return;
-            if (IsDriverDuplikat(txtNoTel.Text.Trim(), txtNoSim.Text.Trim(), selectedDriverId))
+
+            // Cek apakah ada perubahan data sebelum melanjutkan
+            DataGridViewRow selectedRow = dgvDriver.SelectedRows[0];
+            bool dataTelahBerubah =
+                selectedRow.Cells["NamaDriver"].Value.ToString().Trim() != txtNama.Text.Trim() ||
+                selectedRow.Cells["NoTelp"].Value.ToString().Trim() != txtNoTel.Text.Trim() ||
+                selectedRow.Cells["NoSIM"].Value.ToString().Trim() != txtNoSim.Text.Trim() ||
+                selectedRow.Cells["Status"].Value.ToString() != cmbStatus.SelectedItem.ToString();
+
+            if (!dataTelahBerubah)
             {
-                MessageBox.Show("Nomor Telepon atau Nomor SIM sudah digunakan oleh driver lain.", "Data Duplikat", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show("Tidak ada perubahan data yang dilakukan.", "Informasi", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 return;
             }
 
-            // TAMBAHAN BARU: Cek apakah ada perubahan data dari selected row
-            if (dgvDriver.SelectedRows.Count > 0)
+            // Langkah 2: Validasi format semua input
+            if (!ValidateInputFields())
             {
-                DataGridViewRow selectedRow = dgvDriver.SelectedRows[0];
+                return;
+            }
 
-                // Ambil data lama dari grid
-                string namaLama = selectedRow.Cells["NamaDriver"].Value?.ToString() ?? "";
-                string noTelpLama = selectedRow.Cells["NoTelp"].Value?.ToString() ?? "";
-                string noSimLama = selectedRow.Cells["NoSIM"].Value?.ToString() ?? "";
-                string statusLama = selectedRow.Cells["Status"].Value?.ToString() ?? "";
-
-                // Ambil data baru dari form
-                string namaBaru = txtNama.Text.Trim();
-                string noTelpBaru = txtNoTel.Text.Trim();
-                string noSimBaru = txtNoSim.Text.Trim();
-                string statusBaru = this.cmbStatus.SelectedItem?.ToString() ?? "";
-
-                // Bandingkan data lama dengan data baru
-                if (namaLama == namaBaru &&
-                    noTelpLama == noTelpBaru &&
-                    noSimLama == noSimBaru &&
-                    statusLama == statusBaru)
+            /*
+            // --- BLOK PENGECEKAN DATA DUPLIKAT DIHAPUS SESUAI PERMINTAAN ---
+            if (noTelpAsli != noTelpBaru || noSimAsli != noSimBaru)
+            {
+                if (IsDriverDuplikat(noTelpBaru, noSimBaru, selectedDriverId))
                 {
-                    MessageBox.Show("Tidak ada perubahan data yang terdeteksi. Silakan ubah minimal satu field jika ingin menyimpan perubahan.",
-                                    "Tidak Ada Perubahan", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    MessageBox.Show("Nomor Telepon atau Nomor SIM yang baru sudah digunakan oleh driver lain.", "Data Duplikat", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                     return;
                 }
             }
+            */
 
-            using (SqlConnection conn = new SqlConnection(kn.connectionString()))
+            // Langkah 3: Lanjutkan proses update ke database
+            using (SqlConnection conn = new SqlConnection(connectionString))
             {
                 SqlTransaction transaction = null;
-
                 try
                 {
                     conn.Open();
-                    transaction = conn.BeginTransaction(); // 1. Mulai transaksi
+                    transaction = conn.BeginTransaction();
 
-                    using (SqlCommand cmd = new SqlCommand("sp_UpdateDriver", conn, transaction)) // 2. Sertakan transaksi
+                    using (SqlCommand cmd = new SqlCommand("sp_UpdateDriver", conn, transaction))
                     {
                         cmd.CommandType = CommandType.StoredProcedure;
                         cmd.Parameters.AddWithValue("@IDDriver", selectedDriverId);
@@ -396,14 +401,13 @@ namespace BiroWisataForm
                         cmd.ExecuteNonQuery();
                     }
 
-                    transaction.Commit(); // 3. Jika sukses, commit
+                    transaction.Commit();
                     MessageBox.Show("Data driver berhasil diubah!", "Sukses", MessageBoxButtons.OK, MessageBoxIcon.Information);
-
                     RefreshData();
                 }
                 catch (Exception ex)
                 {
-                    transaction?.Rollback(); // 4. Jika gagal, rollback
+                    transaction?.Rollback();
                     MessageBox.Show($"Operasi gagal, semua perubahan dibatalkan.\n\nError: {ex.Message}", "Transaksi Gagal", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
             }
@@ -425,74 +429,76 @@ namespace BiroWisataForm
                 MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
 
-        // Metode ini sudah benar setelah Langkah 1
         private void ClearFields()
         {
             txtNama.Clear();
             txtNoTel.Clear();
             txtNoSim.Clear();
-            selectedDriverId = -1;
-            if (cmbStatus.Items.Count > 0) cmbStatus.SelectedIndex = 0; // Ini akan memilih "--Pilih Status--"
+            selectedDriverId = -1; // Reset ID terpilih
+            if (cmbStatus.Items.Count > 0) cmbStatus.SelectedIndex = 0; // Reset status
             dgvDriver.ClearSelection();
             txtNama.Focus();
         }
 
         // --- Tambahkan Validasi ---
         // --- Perbarui method ValidateInputFields ---
+        // GANTI METODE INI DI FILE Driver.cs
+        // GANTI METODE INI DI FILE Driver.cs
         private bool ValidateInputFields()
         {
-            // Validasi Nama Driver (TIDAK BOLEH KOSONG)
+            bool isValid = true;
+            string errorMsg = "";
+
+            // Validasi Nama Driver
             if (string.IsNullOrWhiteSpace(txtNama.Text))
             {
-                ShowError("Nama Driver tidak boleh kosong!", txtNama);
-                return false;
+                errorMsg += "- Nama Driver tidak boleh kosong.\n";
+                isValid = false;
             }
-
-            // --- TAMBAHAN: Validasi Nama Driver (HANYA HURUF DAN SPASI) ---
-            // Pola Regex: ^[a-zA-Z\s]+$
-            // ^      : Awal string
-            // [a-zA-Z\s]+ : Satu atau lebih karakter yang merupakan huruf (a-z, A-Z) atau spasi (\s)
-            // $      : Akhir string
-            if (!System.Text.RegularExpressions.Regex.IsMatch(txtNama.Text, @"^[a-zA-Z\s]+$"))
+            else if (!System.Text.RegularExpressions.Regex.IsMatch(txtNama.Text, @"^[a-zA-Z\s\.]+$"))
             {
-                ShowError("Nama Driver hanya boleh berisi huruf dan spasi!", txtNama);
-                return false;
+                errorMsg += "- Nama Driver hanya boleh berisi huruf, spasi, dan titik (.).\n";
+                isValid = false;
             }
-            // --- AKHIR TAMBAHAN ---
 
-
-            // Validasi Nomor Telepon (TIDAK BOLEH KOSONG)
+            // Validasi Nomor Telepon
             if (string.IsNullOrWhiteSpace(txtNoTel.Text))
             {
-                ShowError("Nomor Telepon tidak boleh kosong!", txtNoTel);
-                return false;
+                errorMsg += "- Nomor Telepon tidak boleh kosong.\n";
+                isValid = false;
             }
-
-            // (Kode validasi No. Telepon dan No. SIM Anda yang lain tetap di sini)
-            // ...
-            string noTelp = txtNoTel.Text.Trim();
-            if (!System.Text.RegularExpressions.Regex.IsMatch(noTelp, @"^08[0-9]{8,11}$"))
+            else if (!System.Text.RegularExpressions.Regex.IsMatch(txtNoTel.Text.Trim(), @"^08[0-9]{8,11}$"))
             {
-                ShowError("Nomor telepon harus dimulai dengan '08' dan panjang 10-13 digit!", txtNoTel);
-                return false;
+                errorMsg += "- Nomor telepon harus dimulai dengan '08' dan berisi 10-13 digit.\n";
+                isValid = false;
             }
 
-            string noSim = txtNoSim.Text.Trim();
-            if (!System.Text.RegularExpressions.Regex.IsMatch(noSim, @"^[0-9]{14}$")) // No SIM di Indonesia 12 digit
+            // Validasi Nomor SIM
+            if (string.IsNullOrWhiteSpace(txtNoSim.Text))
             {
-                ShowError("Nomor SIM harus 14 digit angka!", txtNoSim);
-                return false;
+                errorMsg += "- Nomor SIM tidak boleh kosong.\n";
+                isValid = false;
+            }
+            else if (!System.Text.RegularExpressions.Regex.IsMatch(txtNoSim.Text.Trim(), @"^[0-9]{12,14}$"))
+            {
+                errorMsg += "- Nomor SIM harus 12 atau 14 digit angka.\n";
+                isValid = false;
             }
 
+            // Jika ada error, tampilkan semua dalam satu MessageBox
+            if (!isValid)
+            {
+                MessageBox.Show("Harap perbaiki input yang tidak valid:\n\n" + errorMsg, "Validasi Gagal", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            }
 
-            return true;
+            return isValid;
         }
 
-        private void ShowError(string message, Control control)
-        {
-            MessageBox.Show(message, "Input Tidak Valid", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-            control.Focus();
-        }
+        //private void ShowError(string message, Control control)
+        //{
+        // MessageBox.Show(message, "Input Tidak Valid", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+        //control.Focus();
+        // }
 
         // --- Tambahkan Event Handler CellClick ---
         // --- GANTI metode DgvDriver_CellClick menjadi seperti ini ---
@@ -514,7 +520,7 @@ namespace BiroWisataForm
             txtNoTel.Text = row.Cells["NoTelp"].Value?.ToString() ?? "";
             txtNoSim.Text = row.Cells["NoSIM"].Value?.ToString() ?? "";
 
-            string statusValue = row.Cells["Status"].Value?.ToString() ?? "-- Pilih Status --";
+            string statusValue = row.Cells["Status"].Value?.ToString() ?? "Aktif";
 
             // Pastikan cmbStatus tidak null sebelum digunakan
             if (this.cmbStatus != null)
@@ -559,11 +565,6 @@ namespace BiroWisataForm
                 // Panggil RefreshData dengan parameter kedua true untuk menandakan ini adalah proses pencarian
                 RefreshData(searchBox.Text, true);
             }
-        }
-
-        private void cmbStatus_SelectedIndexChanged(object sender, EventArgs e)
-        {
-
         }
 
         // private void TxtSearch_TextChanged(object sender, EventArgs e)

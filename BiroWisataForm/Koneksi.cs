@@ -12,6 +12,9 @@ namespace praktikum7
             {
                 string localIP = GetLocalIPAddress();
                 return $@"Data Source={localIP}\KAMILIANURMALA;Initial Catalog=BiroWisataTry;Integrated Security=True;TrustServerCertificate=True;";
+                //return $"Server={localIP}; Initial Catalog=BiroWisataTry;" +
+                //             $"Integrated Security=True;";
+
             }
             catch (Exception ex)
             {

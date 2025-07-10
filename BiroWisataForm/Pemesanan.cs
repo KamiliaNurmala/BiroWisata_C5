@@ -22,14 +22,22 @@ namespace BiroWisataForm
         {
             connectionString = kn.connectionString();
 
-            InitializeComponent();
-            InitializeDataGridViewSettings();
-            InitializeSearchBox(); // Sekarang tanpa timer
+            InitializeComponent(); // Designer initializes controls and DGV columns structure
+            InitializeDataGridViewSettings(); // Set additional runtime DGV properties
+            InitializeSearchBox();
             EnsureDatabaseIndexes();
             LoadPelanggan();
             LoadPaketWisata();
             LoadStatusPembayaran();
             LoadStatusPemesananOptions();
+            // RefreshData called in Load event
+
+            // --- TAMBAHKAN BLOK KODE DI BAWAH INI ---
+            // Inisialisasi Timer untuk pencarian
+            searchTimer = new Timer();
+            searchTimer.Interval = 400; // Jeda 400 milidetik sebelum mencari
+            searchTimer.Tick += SearchTimer_Tick; // Hubungkan timer ke metode SearchTimer_Tick
+                                                  // ----------------------------------------
         }
 
 
@@ -104,24 +112,20 @@ namespace BiroWisataForm
         {
             this.txtSearch.TextChanged += (s, e) =>
             {
-                // Simpan posisi cursor sebelum search
-                int cursorPosition = txtSearch.SelectionStart;
-
-                PerformSearch();
-
-                // Kembalikan focus dan posisi cursor setelah search
-                if (!txtSearch.Focused)
-                {
-                    txtSearch.Focus();
-                }
-                txtSearch.SelectionStart = cursorPosition;
-                txtSearch.SelectionLength = 0;
+                // Setiap kali user mengetik, hentikan timer yang sedang berjalan (jika ada)
+                searchTimer.Stop();
+                // dan mulai lagi dari awal. Pencarian baru akan terjadi setelah user berhenti mengetik.
+                searchTimer.Start();
             };
         }
 
         // TAMBAHKAN metode BARU ini di mana saja di dalam kelas Pemesanan
-        private void PerformSearch()
+        private void SearchTimer_Tick(object sender, EventArgs e)
         {
+            // Pertama, hentikan timer agar tidak berjalan berulang kali tanpa henti
+            searchTimer.Stop();
+
+            // Logika filter yang sebelumnya ada di TextChanged sekarang pindah ke sini
             if (dgvPemesanan.DataSource is DataTable dt)
             {
                 try
@@ -129,21 +133,13 @@ namespace BiroWisataForm
                     string filterText = this.txtSearch.Text.Trim()
                         .Replace("'", "''").Replace("%", "[%]").Replace("_", "[_]");
 
-                    if (string.IsNullOrWhiteSpace(filterText))
-                    {
-                        dt.DefaultView.RowFilter = string.Empty;
-                    }
-                    else
-                    {
-                        dt.DefaultView.RowFilter = string.Format(
-                            "NamaPelanggan LIKE '%{0}%' OR " +
-                            "NamaPaket LIKE '%{0}%' OR " +
-                            "StatusPembayaran LIKE '%{0}%' OR " +
-                            "StatusPemesanan LIKE '%{0}%' OR " +
-                            "CONVERT(TotalPembayaran, 'System.String') LIKE '%{0}%' OR " +
-                            "CONVERT(TanggalPemesanan, 'System.String') LIKE '%{0}%'",
-                            filterText);
-                    }
+                    // Query filter ini tetap sama seperti sebelumnya
+                    dt.DefaultView.RowFilter = string.Format(
+                        "NamaPelanggan LIKE '%{0}%' OR " +
+                        "NamaPaket LIKE '%{0}%' OR " +
+                        "StatusPembayaran LIKE '%{0}%' OR " +
+                        "CONVERT(TotalPembayaran, 'System.String') LIKE '%{0}%'",
+                        filterText);
                 }
                 catch (Exception ex)
                 {
@@ -242,19 +238,19 @@ namespace BiroWisataForm
                 try
                 {
                     conn.Open();
-                    // --- PERUBAHAN DI SINI: Tambahkan kolom tanggal yang diformat ---
+                    // --- PERUBAHAN DI SINI ---
+                    // Query ini sekarang hanya mengambil pemesanan yang statusnya BUKAN 'Dibatalkan'.
                     string query = @"
         SELECT
             p.IDPemesanan, p.IDPelanggan, p.IDPaket,
             p.TanggalPemesanan, p.StatusPembayaran, p.TotalPembayaran,
             pl.NamaPelanggan,
             pw.NamaPaket,
-            p.StatusPemesanan,
-            CONVERT(VARCHAR, p.TanggalPemesanan, 103) AS TanggalPemesananFormatted
+            p.StatusPemesanan
         FROM Pemesanan p
         INNER JOIN Pelanggan pl ON p.IDPelanggan = pl.IDPelanggan
         INNER JOIN PaketWisata pw ON p.IDPaket = pw.IDPaket
-        WHERE p.StatusPemesanan != 'Dibatalkan'
+        WHERE p.StatusPemesanan != 'Dibatalkan'  -- Tambahkan baris ini
         ORDER BY p.TanggalPemesanan DESC, pl.NamaPelanggan";
 
                     var dt = new DataTable();
@@ -400,92 +396,59 @@ namespace BiroWisataForm
 
         private void btnUbah_Click(object sender, EventArgs e)
         {
+            // 1. Pastikan ada pemesanan yang dipilih.
             if (selectedPemesananId < 0)
             {
                 MessageBox.Show("Pilih pemesanan yang akan diubah detailnya!", "Peringatan", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
 
+            // --- LOGIKA BARU: CEK PERUBAHAN DATA ---
+            DataGridViewRow selectedRow = dgvPemesanan.SelectedRows[0];
+
+            // Ambil nilai asli dari baris yang dipilih di tabel
+            var idPelangganAsli = selectedRow.Cells["colIDPelanggan_hidden"].Value;
+            var idPaketAsli = selectedRow.Cells["colIDPaket_hidden"].Value;
+            var tanggalPemesananAsli = Convert.ToDateTime(selectedRow.Cells["colTanggalPemesanan"].Value).Date;
+
+            // Ambil nilai baru dari form input
+            var idPelangganBaru = cmbPelanggan.SelectedValue;
+            var idPaketBaru = cmbPaketWisata.SelectedValue;
+            var tanggalPemesananBaru = dtpTanggalPesan.Value.Date;
+
+            // Bandingkan semua nilai
+            if (idPelangganAsli.Equals(idPelangganBaru) &&
+                idPaketAsli.Equals(idPaketBaru) &&
+                tanggalPemesananAsli == tanggalPemesananBaru)
+            {
+                MessageBox.Show("Tidak ada perubahan data yang dilakukan.", "Informasi", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return; // Hentikan proses jika tidak ada perubahan
+            }
+            // --- AKHIR LOGIKA BARU ---
+
+            // 2. Lakukan validasi format input jika ada perubahan.
             if (!ValidateInputs()) return;
 
-            // *** TAMBAHAN BARU: Cek apakah ada perubahan data ***
-            if (!HasDataChanged())
-            {
-                MessageBox.Show("Tidak ada perubahan data untuk disimpan.", "Informasi",
-                                MessageBoxButtons.OK, MessageBoxIcon.Information);
-                return;
-            }
-            // *** AKHIR TAMBAHAN ***
+            // (Pengecekan duplikasi sengaja dilewati sesuai permintaan sebelumnya)
 
-            int newIdPaket = Convert.ToInt32(cmbPaketWisata.SelectedValue);
-            int newIdPelanggan = Convert.ToInt32(cmbPelanggan.SelectedValue);
-
-            // Pengecekan Duplikasi Langsung di Dalam Tombol
-            try
-            {
-                using (SqlConnection checkConn = new SqlConnection(kn.connectionString()))
-                {
-                    string checkQuery = @"SELECT COUNT(1) FROM dbo.Pemesanan
-                                  WHERE IDPelanggan = @IDPelanggan
-                                    AND IDPaket = @IDPaket
-                                    AND StatusPemesanan NOT IN ('Selesai', 'Dibatalkan')
-                                    AND IDPemesanan != @IDPemesananToExclude";
-
-                    using (SqlCommand checkCmd = new SqlCommand(checkQuery, checkConn))
-                    {
-                        checkCmd.Parameters.AddWithValue("@IDPelanggan", newIdPelanggan);
-                        checkCmd.Parameters.AddWithValue("@IDPaket", newIdPaket);
-                        checkCmd.Parameters.AddWithValue("@IDPemesananToExclude", selectedPemesananId);
-
-                        checkConn.Open();
-                        int existingCount = Convert.ToInt32(checkCmd.ExecuteScalar());
-                        checkConn.Close();
-
-                        if (existingCount > 0)
-                        {
-                            MessageBox.Show("Pelanggan ini sudah memiliki pemesanan aktif untuk paket wisata yang sama.",
-                                            "Duplikasi Pemesanan", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                            return;
-                        }
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Terjadi error saat memeriksa duplikasi data: {ex.Message}", "Error Validasi", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                return;
-            }
-
-            // ... sisa kode tetap sama ...
-            // === Akhir Blok Pengecekan Duplikasi ===
-
-            DateTime newTanggalPemesanan = dtpTanggalPesan.Value;
+            // 3. Lanjutkan proses update ke database.
+            int newIdPaket = Convert.ToInt32(idPaketBaru);
+            int newIdPelanggan = Convert.ToInt32(idPelangganBaru);
             decimal newTotalPembayaran = decimal.Parse(txtTotal.Text, CultureInfo.InvariantCulture);
             string updatedBy = Environment.UserName;
 
-            // Logika transaksi untuk mengubah data dan menyesuaikan kuota tetap sama
             SqlConnection conn = new SqlConnection(kn.connectionString());
             SqlTransaction transaction = null;
 
             try
             {
-                // ... (Sisa kode untuk transaksi UPDATE Anda tidak berubah)
-                // (Salin sisa kode dari metode btnUbah_Click Anda sebelumnya di sini)
                 conn.Open();
                 transaction = conn.BeginTransaction();
 
-                // Dapatkan IDPaket LAMA
-                int oldIdPaket;
-                string getOldPaketIdQuery = "SELECT IDPaket FROM dbo.Pemesanan WHERE IDPemesanan = @IDPemesanan";
-                using (SqlCommand getOldIdCmd = new SqlCommand(getOldPaketIdQuery, conn, transaction))
-                {
-                    getOldIdCmd.Parameters.AddWithValue("@IDPemesanan", selectedPemesananId);
-                    object result = getOldIdCmd.ExecuteScalar();
-                    if (result == null || result == DBNull.Value) throw new InvalidOperationException("Pemesanan yang akan diubah tidak ditemukan.");
-                    oldIdPaket = Convert.ToInt32(result);
-                }
+                // Dapatkan IDPaket LAMA untuk penyesuaian kuota
+                int oldIdPaket = Convert.ToInt32(idPaketAsli);
 
-                // Cek apakah IDPaket berubah
+                // Cek apakah IDPaket berubah untuk menyesuaikan kuota
                 if (oldIdPaket != newIdPaket)
                 {
                     // Kembalikan kuota paket LAMA
@@ -496,7 +459,7 @@ namespace BiroWisataForm
                         returnCmd.ExecuteNonQuery();
                     }
 
-                    // Kurangi kuota paket BARU
+                    // Kurangi kuota paket BARU, pastikan kuota masih tersedia
                     string checkAndTakeNewKuotaQuery = "UPDATE dbo.PaketWisata SET Kuota = Kuota - 1 WHERE IDPaket = @NewIDPaket AND Kuota > 0";
                     using (SqlCommand takeCmd = new SqlCommand(checkAndTakeNewKuotaQuery, conn, transaction))
                     {
@@ -512,7 +475,7 @@ namespace BiroWisataForm
                     updatePemesananCmd.Parameters.AddWithValue("@IDPemesanan", selectedPemesananId);
                     updatePemesananCmd.Parameters.AddWithValue("@IDPelanggan", newIdPelanggan);
                     updatePemesananCmd.Parameters.AddWithValue("@IDPaket", newIdPaket);
-                    updatePemesananCmd.Parameters.AddWithValue("@TanggalPemesanan", newTanggalPemesanan);
+                    updatePemesananCmd.Parameters.AddWithValue("@TanggalPemesanan", tanggalPemesananBaru);
                     updatePemesananCmd.Parameters.AddWithValue("@TotalPembayaran", newTotalPembayaran);
                     updatePemesananCmd.Parameters.AddWithValue("@UpdatedBy", updatedBy);
                     updatePemesananCmd.ExecuteNonQuery();
@@ -627,6 +590,7 @@ namespace BiroWisataForm
             }
         }
 
+        // Ganti metode ini di file Pemesanan.cs
         private void btnRefresh_Click(object sender, EventArgs e)
         {
             // Hapus dulu isi kotak pencarian
@@ -635,14 +599,17 @@ namespace BiroWisataForm
                 this.txtSearch.Clear();
             }
 
-            // --- PERUBAHAN DI SINI ---
-            // Panggil RefreshData dan periksa apakah berhasil (return true)
+            // --- TAMBAHKAN KODE DI BAWAH INI ---
+            // Muat ulang daftar Pelanggan dan Paket Wisata untuk dropdown
+            LoadPelanggan();
+            LoadPaketWisata();
+            // ------------------------------------
+
+            // Muat ulang data utama di tabel (kode ini sudah ada sebelumnya)
             if (RefreshData())
             {
-                // Jika berhasil, tampilkan pesan sukses
                 MessageBox.Show("Data berhasil dimuat ulang.", "Sukses", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
-            // Jika gagal, RefreshData() sudah menampilkan pesan errornya sendiri.
         }
 
 
@@ -651,42 +618,45 @@ namespace BiroWisataForm
         // Di dalam Pemesanan.cs
         private bool ValidateInputs()
         {
-            this.errorProvider1.Clear();
             bool isValid = true;
+            string errorMsg = "";
 
+            // Validasi ComboBox Pelanggan
             if (cmbPelanggan.SelectedValue == null || cmbPelanggan.SelectedValue == DBNull.Value)
             {
-                this.errorProvider1.SetError(cmbPelanggan, "Pilih Pelanggan!");
+                errorMsg += "- Pelanggan harus dipilih.\n";
                 isValid = false;
             }
 
+            // Validasi ComboBox Paket Wisata
             if (cmbPaketWisata.SelectedValue == null || cmbPaketWisata.SelectedValue == DBNull.Value)
             {
-                this.errorProvider1.SetError(cmbPaketWisata, "Pilih Paket Wisata!");
+                errorMsg += "- Paket Wisata harus dipilih.\n";
                 isValid = false;
             }
 
-            // --- TAMBAHKAN VALIDASI INI ---
-            if (cmbStatus.SelectedIndex <= 0) // Index 0 adalah "-- Pilih Status --"
+            // Validasi ComboBox Status Pembayaran
+            if (cmbStatus.SelectedIndex <= 0) // Asumsi Index 0 adalah placeholder
             {
-                this.errorProvider1.SetError(cmbStatus, "Status Pembayaran harus dipilih!");
+                errorMsg += "- Status Pembayaran harus dipilih.\n";
                 isValid = false;
             }
-            // -----------------------------
 
+            // Validasi TextBox Total Pembayaran
             if (string.IsNullOrWhiteSpace(txtTotal.Text))
             {
-                this.errorProvider1.SetError(cmbPaketWisata, "Pilih paket wisata yang valid untuk mendapatkan harga!");
+                errorMsg += "- Total Pembayaran tidak boleh kosong.\n";
                 isValid = false;
             }
 
+            // Jika ada satu atau lebih kesalahan, tampilkan semua dalam satu pesan
             if (!isValid)
             {
-                MessageBox.Show("Harap perbaiki data yang tidak valid.", "Validasi Gagal", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show("Harap perbaiki input yang tidak valid:\n\n" + errorMsg, "Validasi Gagal", MessageBoxButtons.OK, MessageBoxIcon.Warning);
             }
+
             return isValid;
         }
-
         private void LoadStatusPemesananOptions()
         {
             cmbUbahStatusPemesanan.Items.Clear();
@@ -993,53 +963,5 @@ namespace BiroWisataForm
         {
 
         }
-
-        /// <summary>
-        /// Mengecek apakah ada perubahan data antara form input dengan data di grid
-        /// </summary>
-        /// <returns>True jika ada perubahan, False jika tidak ada perubahan</returns>
-        private bool HasDataChanged()
-        {
-            if (dgvPemesanan.SelectedRows.Count == 0) return false;
-
-            try
-            {
-                DataGridViewRow selectedRow = dgvPemesanan.SelectedRows[0];
-
-                // Ambil data dari grid (data asli)
-                var gridIdPelanggan = selectedRow.Cells["colIDPelanggan_hidden"].Value?.ToString();
-                var gridIdPaket = selectedRow.Cells["colIDPaket_hidden"].Value?.ToString();
-                var gridTotalPembayaran = selectedRow.Cells["colTotalPembayaran"].Value?.ToString();
-
-                // Format tanggal untuk perbandingan (hanya tanggal, bukan waktu)
-                var gridTanggalPemesanan = "";
-                if (selectedRow.Cells["colTanggalPemesanan"].Value != null && selectedRow.Cells["colTanggalPemesanan"].Value != DBNull.Value)
-                {
-                    gridTanggalPemesanan = Convert.ToDateTime(selectedRow.Cells["colTanggalPemesanan"].Value).ToString("yyyy-MM-dd");
-                }
-
-                // Ambil data dari form input (data yang akan disimpan)
-                var formIdPelanggan = cmbPelanggan.SelectedValue?.ToString();
-                var formIdPaket = cmbPaketWisata.SelectedValue?.ToString();
-                var formTotalPembayaran = txtTotal.Text.Trim();
-                var formTanggalPemesanan = dtpTanggalPesan.Value.ToString("yyyy-MM-dd");
-
-                // Bandingkan setiap field
-                bool pelangganChanged = gridIdPelanggan != formIdPelanggan;
-                bool paketChanged = gridIdPaket != formIdPaket;
-                bool totalChanged = gridTotalPembayaran != formTotalPembayaran;
-                bool tanggalChanged = gridTanggalPemesanan != formTanggalPemesanan;
-
-                // Return true jika ada minimal 1 field yang berubah
-                return pelangganChanged || paketChanged || totalChanged || tanggalChanged;
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Error saat mengecek perubahan data: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                return true; // Jika error, anggap ada perubahan untuk safety
-            }
-        }
-
-
     }
 }

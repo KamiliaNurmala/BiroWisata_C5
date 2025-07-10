@@ -84,12 +84,14 @@ namespace BiroWisataForm
 
 
         // --- Form Load ---
+        // Ganti metode ini di file PaketWisata.cs
         private void PaketWisata_Load(object sender, EventArgs e)
         {
-            RefreshData(); // Load data when form loads
+            // 1. Muat data ke dalam tabel
+            RefreshData();
+
+            // 2. Kosongkan semua isian form
             ClearInputs();
-            // Ensure SelectionChanged is connected in the designer
-            // this.dgvPaketWisata.SelectionChanged += new System.EventHandler(this.DgvPaketWisata_SelectionChanged);
         }
 
         // --- Control Initialization ---
@@ -114,10 +116,9 @@ namespace BiroWisataForm
             // Pastikan Anda sudah menambahkan TextBox dengan nama 'txtSearch' di form designer
             if (this.Controls.Find("txtSearch", true).FirstOrDefault() is TextBox txtSearch)
             {
-                this.txtSearch.TextChanged += (s, e) =>
+                txtSearch.TextChanged += (s, e) =>
                 {
-                    // Pass the search text to the data refresh method
-                    RefreshData(this.txtSearch.Text);
+                    RefreshData(txtSearch.Text);
                 };
             }
         }
@@ -194,31 +195,25 @@ namespace BiroWisataForm
                 {
                     conn.Open();
                     string query = @"
-    SELECT
-        p.IDPaket, p.NamaPaket, p.Destinasi, p.Harga, p.Durasi,
-        p.Fasilitas, p.Kategori, p.Kuota, p.JadwalKeberangkatan,
-        p.IDDriver, d.NamaDriver,
-        p.IDKendaraan, k.Jenis + ' - ' + k.PlatNomor AS KendaraanInfo,
-        p.CreatedAt, p.UpdatedAt, p.CreatedBy, p.UpdatedBy
-    FROM PaketWisata p
-    INNER JOIN Driver d ON p.IDDriver = d.IDDriver
-    INNER JOIN Kendaraan k ON p.IDKendaraan = k.IDKendaraan
-    WHERE p.IsDeleted = 0";
+        SELECT
+            p.IDPaket, p.NamaPaket, p.Destinasi, p.Harga, p.Durasi,
+            p.Fasilitas, p.Kategori, p.Kuota, p.JadwalKeberangkatan,
+            p.IDDriver, d.NamaDriver,
+            p.IDKendaraan, k.Jenis + ' - ' + k.PlatNomor AS KendaraanInfo,
+            p.CreatedAt, p.UpdatedAt, p.CreatedBy, p.UpdatedBy
+        FROM PaketWisata p
+        INNER JOIN Driver d ON p.IDDriver = d.IDDriver
+        INNER JOIN Kendaraan k ON p.IDKendaraan = k.IDKendaraan
+        WHERE p.IsDeleted = 0";
 
                     if (!string.IsNullOrWhiteSpace(searchTerm))
                     {
-                        // EXPANDED SEARCH: Include ALL fields that users want to search
-                        query += @" AND (
-                    p.NamaPaket LIKE @SearchTerm OR 
-                    p.Destinasi LIKE @SearchTerm OR 
-                    p.Kategori LIKE @SearchTerm OR 
-                    p.Fasilitas LIKE @SearchTerm OR
-                    d.NamaDriver LIKE @SearchTerm OR 
-                    (k.Jenis + ' - ' + k.PlatNomor) LIKE @SearchTerm OR
-                    CAST(p.Harga AS VARCHAR(50)) LIKE @SearchTerm OR
-                    CAST(p.Kuota AS VARCHAR(10)) LIKE @SearchTerm OR
-                    CONVERT(VARCHAR, p.JadwalKeberangkatan, 103) LIKE @SearchTerm
-                )";
+                        // --- PERUBAHAN DIMULAI DI SINI ---
+                        // Menambahkan kondisi pencarian untuk kolom Harga.
+                        // CAST(p.Harga AS VARCHAR(50)) mengubah nilai numerik Harga menjadi teks
+                        // agar bisa dicari menggunakan LIKE.
+                        query += " AND (p.NamaPaket LIKE @SearchTerm OR p.Destinasi LIKE @SearchTerm OR p.Kategori LIKE @SearchTerm OR d.NamaDriver LIKE @SearchTerm OR CAST(p.Harga AS VARCHAR(50)) LIKE @SearchTerm)";
+                        // --- AKHIR PERUBAHAN ---
                     }
 
                     var dt = new DataTable();
@@ -342,20 +337,9 @@ namespace BiroWisataForm
 
             if (!ValidateInputs()) return;
 
-            // *** TAMBAHAN BARU: Cek apakah ada perubahan data ***
-            if (!HasDataChanged())
-            {
-                MessageBox.Show("Tidak ada perubahan data untuk disimpan.", "Informasi",
-                                MessageBoxButtons.OK, MessageBoxIcon.Information);
-                return;
-            }
-            // *** AKHIR TAMBAHAN ***
-
             decimal.TryParse(txtHarga.Text.Trim(), out decimal harga);
             short.TryParse(txtDurasi.Text.Trim(), out short durasi);
             short.TryParse(txtKuota.Text.Trim(), out short kuota);
-
-            // ... sisa kode tetap sama ...
 
             // --- LOGIKA TRANSAKSI DIMULAI DI SINI ---
             SqlConnection conn = new SqlConnection(kn.connectionString());
@@ -541,56 +525,124 @@ namespace BiroWisataForm
         }
 
         // --- Helper Methods ---
+        // Ganti metode ini di file PaketWisata.cs
+        // Ganti metode ini di file PaketWisata.cs
+        // Ganti metode ini di file PaketWisata.cs
         private bool ValidateInputs()
         {
-            this.errorProvider1.Clear();
             bool isValid = true;
+            string errorMsg = "";
 
+            // Validasi ComboBox
             if (cmbDriver.SelectedValue == null || cmbDriver.SelectedValue == DBNull.Value || cmbDriver.SelectedIndex <= 0)
-            { errorProvider1.SetError(cmbDriver, "Pilih Driver yang valid!"); isValid = false; }
+            {
+                errorMsg += "- Driver harus dipilih.\n";
+                isValid = false;
+            }
             if (cmbKendaraan.SelectedValue == null || cmbKendaraan.SelectedValue == DBNull.Value || cmbKendaraan.SelectedIndex <= 0)
-            { errorProvider1.SetError(cmbKendaraan, "Pilih Kendaraan yang valid!"); isValid = false; }
+            {
+                errorMsg += "- Kendaraan harus dipilih.\n";
+                isValid = false;
+            }
             if (cmbKategori.SelectedIndex <= 0)
-            { errorProvider1.SetError(cmbKategori, "Pilih Kategori yang valid!"); isValid = false; }
+            {
+                errorMsg += "- Kategori harus dipilih.\n";
+                isValid = false;
+            }
 
+            // Validasi Nama Paket
             if (string.IsNullOrWhiteSpace(txtNamaPaket.Text))
             {
-                errorProvider1.SetError(txtNamaPaket, "Nama Paket tidak boleh kosong!");
+                errorMsg += "- Nama Paket tidak boleh kosong.\n";
                 isValid = false;
             }
             else if (!System.Text.RegularExpressions.Regex.IsMatch(txtNamaPaket.Text, @"^[a-zA-Z0-9\s]+$"))
             {
-                errorProvider1.SetError(txtNamaPaket, "Nama Paket hanya boleh berisi huruf, angka, dan spasi!");
+                errorMsg += "- Nama Paket hanya boleh berisi huruf, angka, dan spasi.\n";
                 isValid = false;
             }
 
+            // Validasi Destinasi
             if (string.IsNullOrWhiteSpace(txtDestinasi.Text))
-            { errorProvider1.SetError(txtDestinasi, "Destinasi tidak boleh kosong!"); isValid = false; }
+            {
+                errorMsg += "- Destinasi tidak boleh kosong.\n";
+                isValid = false;
+            }
+            else if (!System.Text.RegularExpressions.Regex.IsMatch(txtDestinasi.Text, @"^[a-zA-Z\s]+$"))
+            {
+                errorMsg += "- Destinasi hanya boleh berisi huruf dan spasi.\n";
+                isValid = false;
+            }
 
+            // Validasi Fasilitas
             if (string.IsNullOrWhiteSpace(txtFasilitas.Text))
-            { errorProvider1.SetError(txtFasilitas, "Fasilitas tidak boleh kosong!"); isValid = false; }
+            {
+                errorMsg += "- Fasilitas tidak boleh kosong.\n";
+                isValid = false;
+            }
+            else if (!System.Text.RegularExpressions.Regex.IsMatch(txtFasilitas.Text, @"^[a-zA-Z\s,\.]+$"))
+            {
+                errorMsg += "- Fasilitas hanya boleh berisi huruf, spasi, koma, dan titik.\n";
+                isValid = false;
+            }
 
+            // --- PERUBAHAN VALIDASI HARGA DI SINI ---
             if (string.IsNullOrWhiteSpace(txtHarga.Text))
-            { errorProvider1.SetError(txtHarga, "Harga tidak boleh kosong!"); isValid = false; }
+            {
+                errorMsg += "- Harga tidak boleh kosong.\n";
+                isValid = false;
+            }
             else if (!decimal.TryParse(txtHarga.Text, out decimal harga) || harga <= 0)
-            { errorProvider1.SetError(txtHarga, "Harga harus berupa angka positif!"); isValid = false; }
+            {
+                errorMsg += "- Harga harus berupa angka positif.\n";
+                isValid = false;
+            }
+            else
+            {
+                // Blok ini untuk validasi panjang desimal (10,2)
+                string hargaText = txtHarga.Text.Trim();
+                int decimalPointIndex = hargaText.IndexOf('.');
+                int integerPartLength = (decimalPointIndex == -1) ? hargaText.Length : decimalPointIndex;
+                int scalePartLength = (decimalPointIndex == -1) ? 0 : hargaText.Length - decimalPointIndex - 1;
 
-            if (string.IsNullOrWhiteSpace(txtDurasi.Text))
-            { errorProvider1.SetError(txtDurasi, "Durasi tidak boleh kosong!"); isValid = false; }
-            else if (!short.TryParse(txtDurasi.Text, out short durasi) || durasi <= 0)
-            { errorProvider1.SetError(txtDurasi, "Durasi harus berupa angka positif!"); isValid = false; }
-
-            // --- PERUBAHAN DI SINI ---
-            if (string.IsNullOrWhiteSpace(txtKuota.Text))
-            { errorProvider1.SetError(txtKuota, "Kuota tidak boleh kosong!"); isValid = false; }
-            else if (!short.TryParse(txtKuota.Text, out short kuota) || kuota < 3)
-            { errorProvider1.SetError(txtKuota, "Kuota tidak boleh kurang dari 3!"); isValid = false; }
+                if (integerPartLength > 10 || scalePartLength > 2)
+                {
+                    errorMsg += "- Format harga tidak sesuai (maksimal 10 digit sebelum koma dan 2 setelahnya).\n";
+                    isValid = false;
+                }
+            }
             // --- AKHIR PERUBAHAN ---
 
+            // Validasi Durasi
+            if (string.IsNullOrWhiteSpace(txtDurasi.Text))
+            {
+                errorMsg += "- Durasi tidak boleh kosong.\n";
+                isValid = false;
+            }
+            else if (!short.TryParse(txtDurasi.Text, out short durasi) || durasi <= 0)
+            {
+                errorMsg += "- Durasi hanya diisi angka dan harus berupa angka positif.\n";
+                isValid = false;
+            }
+
+            // Validasi Kuota
+            if (string.IsNullOrWhiteSpace(txtKuota.Text))
+            {
+                errorMsg += "- Kuota tidak boleh kosong.\n";
+                isValid = false;
+            }
+            else if (!short.TryParse(txtKuota.Text, out short kuota) || kuota < 3)
+            {
+                errorMsg += "- Kuota hanya diisi angka positif dan tidak boleh kurang dari 3.\n";
+                isValid = false;
+            }
+
+            // Jika ada satu atau lebih error, tampilkan semua dalam satu MessageBox
             if (!isValid)
             {
-                MessageBox.Show("Harap perbaiki data yang tidak valid.", "Validasi Gagal", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show("Harap perbaiki input yang tidak valid:\n\n" + errorMsg, "Validasi Gagal", MessageBoxButtons.OK, MessageBoxIcon.Warning);
             }
+
             return isValid;
         }
 
@@ -609,7 +661,6 @@ namespace BiroWisataForm
             dtpJadwalKeberangkatan.Value = DateTime.Now; // Use renamed control
             dgvPaketWisata.ClearSelection();
             txtNamaPaket.Focus();
-            errorProvider1.Clear(); // Use the form's error provider
         }
 
         private void HandleSqlError(SqlException ex, string operation)
@@ -659,78 +710,11 @@ namespace BiroWisataForm
                 }
                 else { dtpJadwalKeberangkatan.Value = DateTime.Now; }
 
-                errorProvider1.Clear(); // Clear error provider
             }
             // else
             // { 
             //     ClearInputs(); 
             // }  <-- BLOK INI DIHAPUS
-        }
-
-        /// <summary>
-        /// Mengecek apakah ada perubahan data antara form input dengan data di grid
-        /// </summary>
-        /// <returns>True jika ada perubahan, False jika tidak ada perubahan</returns>
-        private bool HasDataChanged()
-        {
-            if (dgvPaketWisata.SelectedRows.Count == 0) return false;
-
-            try
-            {
-                DataGridViewRow selectedRow = dgvPaketWisata.SelectedRows[0];
-
-                // Ambil data dari grid (data asli)
-                var gridIdDriver = selectedRow.Cells["colIDDriver_hidden"].Value?.ToString();
-                var gridIdKendaraan = selectedRow.Cells["colIDKendaraan_hidden"].Value?.ToString();
-                var gridNamaPaket = selectedRow.Cells["colNamaPaket"].Value?.ToString();
-                var gridDestinasi = selectedRow.Cells["colDestinasi"].Value?.ToString();
-                var gridHarga = selectedRow.Cells["colHarga"].Value?.ToString();
-                var gridDurasi = selectedRow.Cells["colDurasi"].Value?.ToString();
-                var gridFasilitas = selectedRow.Cells["colFasilitas"].Value?.ToString();
-                var gridKategori = selectedRow.Cells["colKategori"].Value?.ToString();
-                var gridKuota = selectedRow.Cells["colKuota"].Value?.ToString();
-
-                // Format jadwal untuk perbandingan (hanya tanggal, bukan waktu)
-                var gridJadwal = "";
-                if (selectedRow.Cells["colJadwal"].Value != null && selectedRow.Cells["colJadwal"].Value != DBNull.Value)
-                {
-                    gridJadwal = Convert.ToDateTime(selectedRow.Cells["colJadwal"].Value).ToString("yyyy-MM-dd");
-                }
-
-                // Ambil data dari form input (data yang akan disimpan)
-                var formIdDriver = cmbDriver.SelectedValue?.ToString();
-                var formIdKendaraan = cmbKendaraan.SelectedValue?.ToString();
-                var formNamaPaket = txtNamaPaket.Text.Trim();
-                var formDestinasi = txtDestinasi.Text.Trim();
-                var formHarga = txtHarga.Text.Trim();
-                var formDurasi = txtDurasi.Text.Trim();
-                var formFasilitas = txtFasilitas.Text.Trim();
-                var formKategori = cmbKategori.SelectedItem?.ToString();
-                var formKuota = txtKuota.Text.Trim();
-                var formJadwal = dtpJadwalKeberangkatan.Value.ToString("yyyy-MM-dd");
-
-                // Bandingkan setiap field
-                bool driverChanged = gridIdDriver != formIdDriver;
-                bool kendaraanChanged = gridIdKendaraan != formIdKendaraan;
-                bool namaPaketChanged = gridNamaPaket != formNamaPaket;
-                bool destinasiChanged = gridDestinasi != formDestinasi;
-                bool hargaChanged = gridHarga != formHarga;
-                bool durasiChanged = gridDurasi != formDurasi;
-                bool fasilitasChanged = gridFasilitas != formFasilitas;
-                bool kategoriChanged = gridKategori != formKategori;
-                bool kuotaChanged = gridKuota != formKuota;
-                bool jadwalChanged = gridJadwal != formJadwal;
-
-                // Return true jika ada minimal 1 field yang berubah
-                return driverChanged || kendaraanChanged || namaPaketChanged || destinasiChanged ||
-                       hargaChanged || durasiChanged || fasilitasChanged || kategoriChanged ||
-                       kuotaChanged || jadwalChanged;
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Error saat mengecek perubahan data: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                return true; // Jika error, anggap ada perubahan untuk safety
-            }
         }
 
         private void DgvPaketWisata_CellClick(object sender, DataGridViewCellEventArgs e)
@@ -776,6 +760,11 @@ namespace BiroWisataForm
         }
 
         private void txtSearch_TextChanged(object sender, EventArgs e)
+        {
+
+        }
+
+        private void txtDurasi_TextChanged(object sender, EventArgs e)
         {
 
         }

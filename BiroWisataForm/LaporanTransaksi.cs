@@ -6,7 +6,6 @@ using System.ComponentModel;
 using System.Data;
 using System.Data.SqlClient;
 using System.Drawing;
-using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -35,52 +34,49 @@ namespace BiroWisataForm
 
         private void SetupReportViewer()
         {
-            // Connection string to your database
-
-            // SQL query to retrieve the required data from the database
+            // SQL query untuk mengambil data yang dibutuhkan
             string query = @"
-                SELECT
-                    p.IDPemesanan,
-                    p.TanggalPemesanan,
-                    pl.NamaPelanggan,
-                    pw.NamaPaket,
-                    p.TotalPembayaran AS TotalTagihan,
-                    ISNULL(SUM(pb.JumlahPembayaran), 0) AS TotalDibayar,
-                    p.TotalPembayaran - ISNULL(SUM(pb.JumlahPembayaran), 0) AS SisaTagihan,
-                    p.StatusPembayaran,
-                    p.StatusPemesanan,
-                    MAX(pb.TanggalPembayaran) AS TanggalLunas
-                FROM
-                    dbo.Pemesanan p
-                INNER JOIN
-                    dbo.Pelanggan pl ON p.IDPelanggan = pl.IDPelanggan
-                INNER JOIN
-                    dbo.PaketWisata pw ON p.IDPaket = pw.IDPaket
-                LEFT JOIN
-                    dbo.Pembayaran pb ON p.IDPemesanan = pb.IDPemesanan
-                GROUP BY
-                    p.IDPemesanan,
-                    p.TanggalPemesanan,
-                    pl.NamaPelanggan,
-                    pw.NamaPaket,
-                    p.TotalPembayaran,
-                    p.StatusPembayaran,
-                    p.StatusPemesanan
-                ORDER BY
-                    p.TanggalPemesanan DESC;";
+        SELECT
+            p.IDPemesanan,
+            p.TanggalPemesanan,
+            pl.NamaPelanggan,
+            pw.NamaPaket,
+            p.TotalPembayaran AS TotalTagihan,
+            ISNULL(SUM(pb.JumlahPembayaran), 0) AS TotalDibayar,
+            p.TotalPembayaran - ISNULL(SUM(pb.JumlahPembayaran), 0) AS SisaTagihan,
+            p.StatusPembayaran,
+            p.StatusPemesanan,
+            MAX(pb.TanggalPembayaran) AS TanggalLunas
+        FROM
+            dbo.Pemesanan p
+        INNER JOIN
+            dbo.Pelanggan pl ON p.IDPelanggan = pl.IDPelanggan
+        INNER JOIN
+            dbo.PaketWisata pw ON p.IDPaket = pw.IDPaket
+        LEFT JOIN
+            dbo.Pembayaran pb ON p.IDPemesanan = pb.IDPemesanan
+        GROUP BY
+            p.IDPemesanan,
+            p.TanggalPemesanan,
+            pl.NamaPelanggan,
+            pw.NamaPaket,
+            p.TotalPembayaran,
+            p.StatusPembayaran,
+            p.StatusPemesanan
+        ORDER BY
+            p.TanggalPemesanan ASC;"; // DIUBAH MENJADI ASC (terlama ke terbaru)
 
             // Create a DataTable to store the data
             DataTable dt = new DataTable();
 
             // Use SqlDataAdapter to fill the DataTable with data from the database
-            using (SqlConnection conn = new SqlConnection(kn.connectionString()))
+            using (SqlConnection conn = new SqlConnection(connectionString))
             {
                 SqlDataAdapter da = new SqlDataAdapter(query, conn);
                 da.Fill(dt);
             }
 
             // Create a ReportDataSource
-            // Make sure "TransaksiDataSet" matches your RDLC dataset name (the name you gave in TransaksiDataSet.xsd)
             ReportDataSource rds = new ReportDataSource("DataSet1", dt);
 
             // Clear any existing data sources and add the new data source
@@ -88,11 +84,8 @@ namespace BiroWisataForm
             reportViewer1.LocalReport.DataSources.Add(rds);
 
             // Set the path to the report (.rdlc file)
-            // Change this to the actual path of your RDLC file
-            //reportViewer1.LocalReport.ReportPath = @"D:\Kuliah\semester4\Pengembangan Aplikasi Basis Data\IniKelompok\BiroWisataForm-Final_Perbaikan\BiroWisataForm-Final2\BiroWisataForm-Final\BiroWisataForm\BiroWisataForm\Report1.rdlc"; // Sesuaikan path file .rdlc Anda
+            reportViewer1.LocalReport.ReportPath = @"D:\Kuliah\semester4\Pengembangan Aplikasi Basis Data\IniKelompok\BiroWisataForm-Final_Perbaikan\BiroWisataForm-Final2\BiroWisataForm-Final\BiroWisataForm\BiroWisataForm\Report1.rdlc";
 
-            string path = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Report1.rdlc");
-            reportViewer1.LocalReport.ReportPath = path;
             // Refresh the ReportViewer to show the updated report
             reportViewer1.RefreshReport();
         }

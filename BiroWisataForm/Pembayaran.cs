@@ -182,48 +182,32 @@ namespace BiroWisataForm
                 {
                     conn.Open();
                     string query = @"SELECT 
-                        pb.IDPembayaran, pb.IDPemesanan, pl.NamaPelanggan, pw.NamaPaket,
-                        pb.JumlahPembayaran, pb.TanggalPembayaran, pb.MetodePembayaran
-                     FROM Pembayaran pb 
-                     INNER JOIN Pemesanan pem ON pb.IDPemesanan = pem.IDPemesanan
-                     INNER JOIN Pelanggan pl ON pem.IDPelanggan = pl.IDPelanggan
-                     INNER JOIN PaketWisata pw ON pem.IDPaket = pw.IDPaket
-                     WHERE 1=1 ";
+                                pb.IDPembayaran, pb.IDPemesanan, pl.NamaPelanggan, pw.NamaPaket,
+                                pb.JumlahPembayaran, pb.TanggalPembayaran, pb.MetodePembayaran
+                             FROM Pembayaran pb 
+                             INNER JOIN Pemesanan pem ON pb.IDPemesanan = pem.IDPemesanan
+                             INNER JOIN Pelanggan pl ON pem.IDPelanggan = pl.IDPelanggan
+                             INNER JOIN PaketWisata pw ON pem.IDPaket = pw.IDPaket
+                             WHERE 1=1 ";
 
                     SqlCommand cmd = new SqlCommand();
                     cmd.Parameters.Clear();
 
-                    // EXPANDED SEARCH to include MetodePembayaran and date searches
+                    // --- PERUBAHAN ADA DI SINI ---
                     if (!string.IsNullOrWhiteSpace(searchTerm))
                     {
-                        query += @" AND (
-                    pl.NamaPelanggan LIKE @SearchTerm OR 
-                    pw.NamaPaket LIKE @SearchTerm OR 
-                    pb.MetodePembayaran LIKE @SearchTerm OR
-                    CAST(pb.IDPemesanan AS VARCHAR) LIKE @SearchTerm OR 
-                    CAST(pb.JumlahPembayaran AS VARCHAR(50)) LIKE @SearchTerm OR
-                    CONVERT(VARCHAR, pb.TanggalPembayaran, 103) LIKE @SearchTerm
-                )";
+                        // Menambahkan pencarian berdasarkan JumlahPembayaran
+                        query += " AND (pl.NamaPelanggan LIKE @SearchTerm OR pw.NamaPaket LIKE @SearchTerm OR CAST(pb.IDPemesanan AS VARCHAR) LIKE @SearchTerm OR CAST(pb.JumlahPembayaran AS VARCHAR(50)) LIKE @SearchTerm)";
                         cmd.Parameters.AddWithValue("@SearchTerm", $"%{searchTerm}%");
                     }
+                    // --- AKHIR PERUBAHAN ---
 
-                    // Keep existing date filter logic
-                    if (pemesananFilterStart.HasValue && pemesananFilterEnd.HasValue)
-                    {
-                        query += " AND pem.TanggalPemesanan BETWEEN @PemesananStart AND @PemesananEnd";
-                        cmd.Parameters.AddWithValue("@PemesananStart", pemesananFilterStart.Value.Date);
-                        cmd.Parameters.AddWithValue("@PemesananEnd", pemesananFilterEnd.Value.Date.AddDays(1).AddTicks(-1));
-                    }
+                    if (pemesananFilterStart.HasValue) { query += " AND pem.TanggalPemesanan >= @PemesananStartDate "; cmd.Parameters.AddWithValue("@PemesananStartDate", pemesananFilterStart.Value.Date); }
+                    if (pemesananFilterEnd.HasValue) { query += " AND pem.TanggalPemesanan <= @PemesananEndDate "; cmd.Parameters.AddWithValue("@PemesananEndDate", pemesananFilterEnd.Value.Date.AddDays(1).AddTicks(-1)); }
+                    if (pembayaranFilterStart.HasValue) { query += " AND pb.TanggalPembayaran >= @PembayaranStartDate "; cmd.Parameters.AddWithValue("@PembayaranStartDate", pembayaranFilterStart.Value.Date); }
+                    if (pembayaranFilterEnd.HasValue) { query += " AND pb.TanggalPembayaran <= @PembayaranEndDate "; cmd.Parameters.AddWithValue("@PembayaranEndDate", pembayaranFilterEnd.Value.Date.AddDays(1).AddTicks(-1)); }
 
-                    if (pembayaranFilterStart.HasValue && pembayaranFilterEnd.HasValue)
-                    {
-                        query += " AND pb.TanggalPembayaran BETWEEN @PembayaranStart AND @PembayaranEnd";
-                        cmd.Parameters.AddWithValue("@PembayaranStart", pembayaranFilterStart.Value.Date);
-                        cmd.Parameters.AddWithValue("@PembayaranEnd", pembayaranFilterEnd.Value.Date.AddDays(1).AddTicks(-1));
-                    }
-
-                    query += " ORDER BY pb.TanggalPembayaran DESC";
-
+                    query += " ORDER BY pb.TanggalPembayaran DESC, pb.IDPembayaran DESC";
                     cmd.CommandText = query;
                     cmd.Connection = conn;
 
@@ -232,11 +216,17 @@ namespace BiroWisataForm
                     adapter.Fill(dt);
 
                     dgvPembayaran.DataSource = dt;
+
+                    if (string.IsNullOrWhiteSpace(searchTerm) || dt.Rows.Count == 0 || dt.Rows.Count > 1)
+                    {
+                        ClearInputs();
+                    }
+
                     return true;
                 }
                 catch (Exception ex)
                 {
-                    HandleGeneralError("refresh data", ex);
+                    HandleLoadError("Refresh Data Pembayaran", ex);
                     return false;
                 }
             }
@@ -335,33 +325,27 @@ namespace BiroWisataForm
         }
 
         // Ganti metode ini di Pembayaran.cs
+        // Ganti metode ini di file Pembayaran.cs
         private void btnTambah_Click(object sender, EventArgs e)
         {
             if (!ValidateInputsForAdd(out decimal jumlahPembayaran, out int idPemesanan, out decimal totalTagihan)) return;
-
-            // =================================================================
-            // LOGIKA TRANSAKSI DIMULAI DI SINI
-            // =================================================================
 
             SqlConnection conn = new SqlConnection(kn.connectionString());
             SqlTransaction transaction = null;
 
             try
             {
-                // 1. Buka Koneksi dan Mulai Transaksi
                 conn.Open();
                 transaction = conn.BeginTransaction();
 
-                // --- Langkah A: Cek apakah pemesanan sudah lunas sebelumnya ---
+                // Cek apakah pemesanan sudah lunas
                 string checkStatusQuery = "SELECT StatusPembayaran FROM dbo.Pemesanan WHERE IDPemesanan = @IDPemesanan";
                 using (SqlCommand checkCmd = new SqlCommand(checkStatusQuery, conn, transaction))
                 {
                     checkCmd.Parameters.AddWithValue("@IDPemesanan", idPemesanan);
                     string currentStatus = checkCmd.ExecuteScalar()?.ToString();
-
                     if (currentStatus == "Lunas")
                     {
-                        // Jika sudah lunas, lempar error untuk memicu rollback dan menampilkan pesan.
                         throw new InvalidOperationException("Pemesanan ini sudah lunas. Tidak dapat melakukan pembayaran lagi.");
                     }
                     if (string.IsNullOrEmpty(currentStatus))
@@ -370,7 +354,7 @@ namespace BiroWisataForm
                     }
                 }
 
-                // --- Langkah B: Insert data ke tabel Pembayaran menggunakan SP sederhana ---
+                // Insert data ke tabel Pembayaran
                 using (SqlCommand addCmd = new SqlCommand("sp_AddPembayaran", conn, transaction))
                 {
                     addCmd.CommandType = CommandType.StoredProcedure;
@@ -381,11 +365,10 @@ namespace BiroWisataForm
                     addCmd.ExecuteNonQuery();
                 }
 
-                // --- Langkah C: Update status di tabel Pemesanan jika pembayaran mencukupi ---
-                // Variabel totalTagihan sudah kita dapatkan dari validasi input sebelumnya.
+                // Update status di tabel Pemesanan jika pembayaran lunas
                 if (jumlahPembayaran >= totalTagihan)
                 {
-                    string updateStatusQuery = "UPDATE dbo.Pemesanan SET StatusPembayaran = 'Lunas' WHERE IDPemesanan = @IDPemesanan";
+                    string updateStatusQuery = "UPDATE dbo.Pemesanan SET StatusPembayaran = 'Lunas', StatusPemesanan = 'Selesai' WHERE IDPemesanan = @IDPemesanan";
                     using (SqlCommand updateCmd = new SqlCommand(updateStatusQuery, conn, transaction))
                     {
                         updateCmd.Parameters.AddWithValue("@IDPemesanan", idPemesanan);
@@ -393,10 +376,9 @@ namespace BiroWisataForm
                     }
                 }
 
-                // 3. Jika semua perintah berhasil, Commit Transaksi
+                // Commit transaksi jika semua berhasil
                 transaction.Commit();
 
-                // Tampilkan pesan sukses dan perbarui UI setelah commit berhasil
                 MessageBox.Show("Pembayaran berhasil ditambahkan.", "Sukses", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 RefreshData(null, null, null, null);
                 LoadPemesananForComboBox();
@@ -404,23 +386,15 @@ namespace BiroWisataForm
             }
             catch (Exception ex)
             {
-                // 4. Jika ada error di mana saja dalam blok 'try', Rollback Transaksi
-                MessageBox.Show($"Terjadi kesalahan, perubahan dibatalkan: {ex.Message}", "Transaksi Gagal", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                try
-                {
-                    if (transaction != null)
-                    {
-                        transaction.Rollback();
-                    }
-                }
-                catch (Exception rollbackEx)
-                {
-                    MessageBox.Show($"Kesalahan fatal saat rollback: {rollbackEx.Message}", "Error Kritis", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                }
+                // --- PERUBAHAN DI SINI ---
+                // Rollback dipanggil langsung. Tanda tanya (?) memastikan program tidak error
+                // jika 'transaction' belum sempat dibuat (null).
+                transaction?.Rollback();
+                MessageBox.Show($"Terjadi kesalahan, semua perubahan dibatalkan: {ex.Message}", "Transaksi Gagal", MessageBoxButtons.OK, MessageBoxIcon.Warning);
             }
             finally
             {
-                // 5. Selalu tutup koneksi pada akhirnya
+                // Selalu tutup koneksi
                 if (conn.State == ConnectionState.Open)
                 {
                     conn.Close();
@@ -464,15 +438,6 @@ namespace BiroWisataForm
 
             if (!ValidateInputsForUpdate()) return;
 
-            // *** TAMBAHAN BARU: Cek apakah ada perubahan data ***
-            if (!HasDataChanged())
-            {
-                MessageBox.Show("Tidak ada perubahan data untuk disimpan.", "Informasi",
-                                MessageBoxButtons.OK, MessageBoxIcon.Information);
-                return;
-            }
-            // *** AKHIR TAMBAHAN ***
-
             try
             {
                 using (var conn = new SqlConnection(kn.connectionString()))
@@ -485,6 +450,8 @@ namespace BiroWisataForm
                         cmd.Parameters.AddWithValue("@TanggalPembayaran", dateTimePicker1.Value);
                         cmd.Parameters.AddWithValue("@MetodePembayaran", comboBoxMetode.SelectedItem.ToString());
 
+                        // --- PERUBAHAN DI SINI ---
+                        // Hapus kondisi 'if' dan 'else'.
                         cmd.ExecuteNonQuery();
 
                         MessageBox.Show("Data pembayaran berhasil diubah.", "Sukses", MessageBoxButtons.OK, MessageBoxIcon.Information);
@@ -496,6 +463,7 @@ namespace BiroWisataForm
             catch (SqlException ex) { HandleSqlError(ex, "mengubah pembayaran"); }
             catch (Exception ex) { HandleGeneralError("mengubah pembayaran", ex); }
         }
+
 
         private void btnHapus_Click(object sender, EventArgs e)
         {
@@ -742,48 +710,6 @@ namespace BiroWisataForm
                 DateTime pembayaranEnd = dtpPembayaranFilterEnd.Value;
 
                 RefreshData(searchBox.Text, pemesananStart, pemesananEnd, pembayaranStart, pembayaranEnd);
-            }
-        }
-
-        /// <summary>
-        /// Mengecek apakah ada perubahan data antara form input dengan data di grid
-        /// </summary>
-        /// <returns>True jika ada perubahan, False jika tidak ada perubahan</returns>
-        private bool HasDataChanged()
-        {
-            if (dgvPembayaran.SelectedRows.Count == 0 || selectedPembayaranId < 0) return false;
-
-            try
-            {
-                DataGridViewRow selectedRow = dgvPembayaran.SelectedRows[0];
-
-                // Ambil data dari grid (data asli)
-                var gridMetodePembayaran = selectedRow.Cells["colMetodePembayaran"].Value?.ToString();
-
-                // Format tanggal untuk perbandingan (hingga menit, karena pembayaran biasanya mencatat jam)
-                var gridTanggalPembayaran = "";
-                if (selectedRow.Cells["colTanggalPembayaran"].Value != null && selectedRow.Cells["colTanggalPembayaran"].Value != DBNull.Value)
-                {
-                    gridTanggalPembayaran = Convert.ToDateTime(selectedRow.Cells["colTanggalPembayaran"].Value).ToString("yyyy-MM-dd HH:mm");
-                }
-
-                // Ambil data dari form input (data yang akan disimpan)
-                var formMetodePembayaran = comboBoxMetode.SelectedItem?.ToString();
-                var formTanggalPembayaran = dateTimePicker1.Value.ToString("yyyy-MM-dd HH:mm");
-
-                // Bandingkan setiap field yang bisa diubah
-                // Note: Pada form Pembayaran, biasanya hanya Tanggal dan Metode yang bisa diubah
-                // JumlahPembayaran dan IDPemesanan biasanya tidak diubah untuk menjaga integritas data
-                bool metodeChanged = gridMetodePembayaran != formMetodePembayaran;
-                bool tanggalChanged = gridTanggalPembayaran != formTanggalPembayaran;
-
-                // Return true jika ada minimal 1 field yang berubah
-                return metodeChanged || tanggalChanged;
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Error saat mengecek perubahan data: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                return true; // Jika error, anggap ada perubahan untuk safety
             }
         }
     }

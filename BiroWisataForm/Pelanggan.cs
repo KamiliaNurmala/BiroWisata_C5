@@ -72,14 +72,14 @@ namespace BiroWisataForm
             }
         }
 
+        // Ganti metode ini di file Pelanggan.cs
         private void Pelanggan_Load(object sender, EventArgs e)
         {
+            // Langkah 1: Muat data seperti biasa
             RefreshData();
+
+            // Langkah 2: Panggil metode untuk mengosongkan semua field
             ClearFields();
-            // Ensure the SelectionChanged event is connected.
-            // If you haven't done it in the designer, you can do it here:
-            // this.dgvPelanggan.SelectionChanged += new System.EventHandler(this.dgvPelanggan_SelectionChanged);
-            // However, it's best practice to do it in the designer.
         }
 
         private void InitializeDataGridViewSettings()
@@ -178,6 +178,7 @@ namespace BiroWisataForm
             }
         }
 
+        // Ganti metode ini di file Pelanggan.cs
         private bool IsDataDuplikat(string noTelp, string email, string alamat, int idPelangganToExclude = 0)
         {
             using (SqlConnection conn = new SqlConnection(kn.connectionString()))
@@ -185,17 +186,12 @@ namespace BiroWisataForm
                 try
                 {
                     conn.Open();
-                    // Query ini akan menghitung berapa banyak pelanggan yang punya NoTelp ATAU Email ATAU Alamat yang sama.
-                    // Kita juga mengecualikan data yang sudah di "soft delete" (IsDeleted = 0).
+                    // Query diubah untuk memeriksa NoTelp, Email, ATAU Alamat
                     string query = @"
-                SELECT COUNT(*) 
-                FROM Pelanggan 
+                SELECT COUNT(1) FROM Pelanggan 
                 WHERE (NoTelp = @NoTelp OR Email = @Email OR Alamat = @Alamat) 
                   AND IsDeleted = 0";
 
-                    // Jika kita sedang dalam mode 'Ubah', kita harus mengecualikan ID pelanggan
-                    // yang sedang kita edit dari pengecekan.
-                    // Ini mencegah program menganggap data itu duplikat dari dirinya sendiri.
                     if (idPelangganToExclude > 0)
                     {
                         query += " AND IDPelanggan != @IDPelanggan";
@@ -205,74 +201,81 @@ namespace BiroWisataForm
                     {
                         cmd.Parameters.AddWithValue("@NoTelp", noTelp);
                         cmd.Parameters.AddWithValue("@Email", email);
-                        cmd.Parameters.AddWithValue("@Alamat", alamat);
+                        cmd.Parameters.AddWithValue("@Alamat", alamat); // Tambahkan parameter alamat
 
                         if (idPelangganToExclude > 0)
                         {
                             cmd.Parameters.AddWithValue("@IDPelanggan", idPelangganToExclude);
                         }
 
-                        // ExecuteScalar digunakan untuk mengambil satu nilai tunggal dari query (dalam hal ini, jumlah baris).
-                        int count = (int)cmd.ExecuteScalar();
-
-                        // Jika count > 0, berarti ada data duplikat.
+                        int count = Convert.ToInt32(cmd.ExecuteScalar());
                         return count > 0;
                     }
                 }
                 catch (Exception ex)
                 {
                     MessageBox.Show($"Terjadi kesalahan saat memeriksa duplikasi data: {ex.Message}", "Database Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    // Asumsikan ada duplikat jika terjadi error untuk mencegah data yang tidak diinginkan masuk.
                     return true;
                 }
             }
         }
 
+        // GANTI METODE INI DI FILE Pelanggan.cs
+        // Ganti metode ini di file Pelanggan.cs
+        // Ganti metode ini di file Pelanggan.cs
+        // Ganti metode ini di file Pelanggan.cs
+        // Ganti metode ini di file Pelanggan.cs
         private bool ValidateInput()
         {
-            // Gunakan errorProvider1 (yang dari designer)
-            errorProvider1.Clear();
             bool isValid = true;
+            string errorMsg = "";
 
             // --- Validasi Nama Pelanggan ---
-            if (string.IsNullOrWhiteSpace(txtNama.Text))
+            string nama = txtNama.Text;
+            if (string.IsNullOrWhiteSpace(nama))
             {
-                errorProvider1.SetError(txtNama, "Nama pelanggan harus diisi!");
+                errorMsg += "- Nama pelanggan harus diisi.\n";
                 isValid = false;
             }
-            // --- PERUBAHAN DIMULAI DI SINI ---
-            // Mengganti validasi lama dengan Regex agar bisa menerima titik (.)
-            // Pola Regex: ^[a-zA-Z\s\.]+$
-            // ^         : Awal string
-            // [a-zA-Z\s\.] : Karakter yang diizinkan (huruf besar/kecil, spasi, dan titik)
-            // +         : Karakter dari set di atas harus muncul satu atau lebih kali
-            // $         : Akhir string
-            else if (!System.Text.RegularExpressions.Regex.IsMatch(txtNama.Text, @"^[a-zA-Z\s\.]+$"))
+            else
             {
-                errorProvider1.SetError(txtNama, "Nama pelanggan hanya boleh berisi huruf, spasi, dan titik (.)!");
+                if (!System.Text.RegularExpressions.Regex.IsMatch(nama, @"^[a-zA-Z0-9\s\.]+$"))
+                {
+                    errorMsg += "- Nama hanya boleh berisi huruf, angka, spasi, dan titik.\n";
+                    isValid = false;
+                }
+                if (!nama.Any(char.IsLetter))
+                {
+                    errorMsg += "- Nama pelanggan harus mengandung setidaknya satu huruf.\n";
+                    isValid = false;
+                }
+            }
+
+            // --- PERUBAHAN VALIDASI ALAMAT DI SINI ---
+            if (string.IsNullOrWhiteSpace(txtAlamat.Text))
+            {
+                errorMsg += "- Alamat pelanggan harus diisi.\n";
+                isValid = false;
+            }
+            // Cek apakah input hanya berisi huruf, angka, spasi, titik, dan koma
+            else if (!System.Text.RegularExpressions.Regex.IsMatch(txtAlamat.Text, @"^[a-zA-Z0-9\s\.,]+$"))
+            {
+                errorMsg += "- Alamat hanya boleh berisi huruf, angka, spasi, titik (.), dan koma (,).\n";
                 isValid = false;
             }
             // --- AKHIR PERUBAHAN ---
-
-            // --- Validasi Alamat ---
-            if (string.IsNullOrWhiteSpace(txtAlamat.Text))
-            {
-                errorProvider1.SetError(txtAlamat, "Alamat pelanggan harus diisi!");
-                isValid = false;
-            }
 
             // --- Validasi Nomor Telepon ---
             string phoneNumber = txtNoTelp.Text.Trim();
             if (string.IsNullOrWhiteSpace(phoneNumber))
             {
-                errorProvider1.SetError(txtNoTelp, "Nomor telepon harus diisi!");
+                errorMsg += "- Nomor telepon harus diisi.\n";
                 isValid = false;
             }
             else if (!phoneNumber.StartsWith("08") || phoneNumber.Length < 10 ||
                      phoneNumber.Length > 13 || !phoneNumber.All(char.IsDigit))
             {
-                errorProvider1.SetError(txtNoTelp,
-                    "Nomor telepon harus dimulai dengan '08' dan berisi 10-13 digit angka!");
+                errorMsg += "- Nomor telepon harus dimulai dengan '08' dan berisi 10-13 digit angka.\n";
                 isValid = false;
             }
 
@@ -280,46 +283,50 @@ namespace BiroWisataForm
             string email = txtEmail.Text.Trim();
             if (string.IsNullOrWhiteSpace(email))
             {
-                errorProvider1.SetError(txtEmail, "Email harus diisi!");
+                errorMsg += "- Email harus diisi.\n";
                 isValid = false;
             }
-            else
+            else if (!System.Text.RegularExpressions.Regex.IsMatch(email, @"^[a-zA-Z][a-zA-Z0-9.]*@[a-zA-Z0-9]+\.(?:com|co\.id)$"))
             {
-                try
-                {
-                    var addr = new MailAddress(email);
-                }
-                catch
-                {
-                    errorProvider1.SetError(txtEmail, "Format email tidak valid. Pastikan mengandung '@' dan domain (contoh: nama@email.com).");
-                    isValid = false;
-                }
+                errorMsg += "- Format email tidak valid. Hanya boleh diawali huruf dulu baru angka, dan hanya bisa @domain.com atau .co.id, boleh menggunakan (.).\n";
+                isValid = false;
             }
+
+            // Jika ada satu atau lebih kesalahan, tampilkan semua dalam satu pesan
+            if (!isValid)
+            {
+                MessageBox.Show("Harap perbaiki input yang tidak valid:\n\n" + errorMsg, "Validasi Gagal", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            }
+
             return isValid;
         }
 
         private void btnTambah_Click(object sender, EventArgs e)
         {
-            // Validasi input dan pengecekan duplikat tetap di sini
+            // 1. Validasi format semua input.
             if (!ValidateInput())
             {
-                MessageBox.Show("Harap perbaiki kesalahan input sebelum menyimpan.", "Validasi Gagal",
-                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                // Pesan error sudah ditampilkan dari dalam ValidateInput.
                 return;
             }
 
-            if (IsDataDuplikat(txtNoTelp.Text.Trim(), txtEmail.Text.Trim(), txtAlamat.Text.Trim()))
+            string nama = txtNama.Text.Trim();
+            string alamat = txtAlamat.Text.Trim();
+            string noTelp = txtNoTelp.Text.Trim();
+            string email = txtEmail.Text.Trim();
+
+            // 2. Cek duplikasi untuk Alamat, No. Telp, dan Email.
+            if (IsDataDuplikat(noTelp, email, alamat))
             {
                 MessageBox.Show("Nomor Telepon, Email, atau Alamat sudah terdaftar.", "Data Duplikat",
-                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                                MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
 
-            // --- MANAJEMEN TRANSAKSI ---
+            // 3. Lanjutkan proses penyimpanan ke database.
             using (SqlConnection conn = new SqlConnection(kn.connectionString()))
             {
                 SqlTransaction transaction = null;
-
                 try
                 {
                     conn.Open();
@@ -328,35 +335,28 @@ namespace BiroWisataForm
                     using (SqlCommand cmd = new SqlCommand("sp_AddPelanggan", conn, transaction))
                     {
                         cmd.CommandType = CommandType.StoredProcedure;
-
-                        cmd.Parameters.AddWithValue("@NamaPelanggan", txtNama.Text.Trim());
-                        cmd.Parameters.AddWithValue("@Alamat", txtAlamat.Text.Trim());
-                        cmd.Parameters.AddWithValue("@NoTelp", txtNoTelp.Text.Trim());
-                        cmd.Parameters.AddWithValue("@Email", txtEmail.Text.Trim());
+                        cmd.Parameters.AddWithValue("@NamaPelanggan", nama);
+                        cmd.Parameters.AddWithValue("@Alamat", alamat);
+                        cmd.Parameters.AddWithValue("@NoTelp", noTelp);
+                        cmd.Parameters.AddWithValue("@Email", email);
 
                         int result = cmd.ExecuteNonQuery();
-
                         if (result > 0)
                         {
-                            // Hanya jika BERHASIL, commit transaksi
                             transaction.Commit();
                             MessageBox.Show("Data pelanggan berhasil ditambahkan!", "Sukses",
-                                MessageBoxButtons.OK, MessageBoxIcon.Information);
+                                            MessageBoxButtons.OK, MessageBoxIcon.Information);
                             RefreshData();
                         }
                         else
                         {
-                            // Lemparkan exception jika gagal menambahkan data
                             throw new Exception("Gagal menambahkan data pelanggan ke database.");
                         }
                     }
                 }
                 catch (Exception ex)
                 {
-                    // --- TITIK PUSAT ROLLBACK: Semua kegagalan ditangani di sini ---
                     transaction?.Rollback();
-
-                    // Tampilkan pesan error yang sesuai
                     string title = (ex is SqlException) ? "SQL Error" : "Error";
                     MessageBox.Show(ex.Message, title, MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
@@ -433,62 +433,65 @@ namespace BiroWisataForm
             }
         }
 
+        // GANTI METODE INI DI FILE Pelanggan.cs
         private void btnUbah_Click(object sender, EventArgs e)
         {
-            // Cek apakah ada baris yang dipilih
+            // 1. Pastikan ada baris yang dipilih.
             if (dgvPelanggan.SelectedRows.Count == 0 || dgvPelanggan.SelectedRows[0].Cells["colIDPelanggan"].Value == null)
             {
                 MessageBox.Show("Pilih pelanggan yang akan diubah!", "Peringatan", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
-            int selectedId = Convert.ToInt32(dgvPelanggan.SelectedRows[0].Cells["colIDPelanggan"].Value);
 
-            // Panggil validasi dan tampilkan MessageBox jika gagal
-            if (!ValidateInput())
-            {
-                MessageBox.Show("Harap perbaiki kesalahan input sebelum menyimpan.", "Validasi Gagal",
-                                MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                return; // Hentikan proses jika validasi gagal
-            }
+            // 2. Cek apakah ada perubahan data.
+            DataGridViewRow selectedRow = dgvPelanggan.SelectedRows[0];
+            bool dataTelahBerubah =
+                selectedRow.Cells["colNamaPelanggan"].Value.ToString().Trim() != txtNama.Text.Trim() ||
+                selectedRow.Cells["colAlamat"].Value.ToString().Trim() != txtAlamat.Text.Trim() ||
+                selectedRow.Cells["colNoTelp"].Value.ToString().Trim() != txtNoTelp.Text.Trim() ||
+                selectedRow.Cells["colEmail"].Value.ToString().Trim() != txtEmail.Text.Trim();
 
-            // *** TAMBAHAN BARU: Cek apakah ada perubahan data ***
-            if (!HasDataChanged())
+            if (!dataTelahBerubah)
             {
-                MessageBox.Show("Tidak ada perubahan data untuk disimpan.", "Informasi",
-                                MessageBoxButtons.OK, MessageBoxIcon.Information);
+                MessageBox.Show("Tidak ada perubahan data yang dilakukan.", "Informasi", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 return;
             }
-            // *** AKHIR TAMBAHAN ***
 
-            // Cek data duplikat (untuk No. Telp, Email & Alamat)
-            if (IsDataDuplikat(txtNoTelp.Text.Trim(), txtEmail.Text.Trim(), txtAlamat.Text.Trim(), selectedId))
+            // 3. Validasi format input jika ada perubahan.
+            if (!ValidateInput())
+            {
+                return;
+            }
+
+            // 4. Cek duplikasi jika data unik diubah.
+            int selectedId = Convert.ToInt32(selectedRow.Cells["colIDPelanggan"].Value);
+            string noTelpBaru = txtNoTelp.Text.Trim();
+            string emailBaru = txtEmail.Text.Trim();
+            string alamatBaru = txtAlamat.Text.Trim();
+
+            if (IsDataDuplikat(noTelpBaru, emailBaru, alamatBaru, selectedId))
             {
                 MessageBox.Show("Nomor Telepon, Email, atau Alamat sudah digunakan oleh pelanggan lain.", "Data Duplikat",
                                 MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
 
-            // ... sisa kode tetap sama ...
-
-            // --- MANAJEMEN TRANSAKSI (Kode ini tetap sama) ---
+            // 5. Lanjutkan proses update.
             using (SqlConnection conn = new SqlConnection(kn.connectionString()))
             {
                 SqlTransaction transaction = null;
-
                 try
                 {
                     conn.Open();
                     transaction = conn.BeginTransaction();
-
                     using (SqlCommand cmd = new SqlCommand("sp_UpdatePelanggan", conn, transaction))
                     {
                         cmd.CommandType = CommandType.StoredProcedure;
                         cmd.Parameters.AddWithValue("@IDPelanggan", selectedId);
                         cmd.Parameters.AddWithValue("@NamaPelanggan", txtNama.Text.Trim());
-                        cmd.Parameters.AddWithValue("@Alamat", txtAlamat.Text.Trim());
-                        cmd.Parameters.AddWithValue("@NoTelp", txtNoTelp.Text.Trim());
-                        cmd.Parameters.AddWithValue("@Email", txtEmail.Text.Trim());
-
+                        cmd.Parameters.AddWithValue("@Alamat", alamatBaru);
+                        cmd.Parameters.AddWithValue("@NoTelp", noTelpBaru);
+                        cmd.Parameters.AddWithValue("@Email", emailBaru);
                         int result = cmd.ExecuteNonQuery();
 
                         if (result > 0)
@@ -512,6 +515,7 @@ namespace BiroWisataForm
             }
         }
 
+        // Ganti juga metode ini agar konsisten
         private void btnRefresh_Click(object sender, EventArgs e)
         {
             txtSearch.Clear();
@@ -519,9 +523,10 @@ namespace BiroWisataForm
             // Panggil RefreshData dan simpan hasilnya
             bool isSuccess = RefreshData();
 
-            // Hanya tampilkan pesan jika refresh berhasil
+            // Jika refresh berhasil, bersihkan juga isian form
             if (isSuccess)
             {
+                ClearFields(); // Tambahkan baris ini
                 MessageBox.Show("Data berhasil di-refresh.", "Informasi", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
             // Jika gagal, pesan error sudah ditampilkan dari dalam method RefreshData
@@ -537,7 +542,6 @@ namespace BiroWisataForm
             // if (selectedPelangganId != -1) selectedPelangganId = -1; // Reset if you use this field
             dgvPelanggan.ClearSelection();
             txtNama.Focus(); // Set focus to the first input field
-            errorProvider1.Clear(); // Clear errors from the designer's error provider
         }
 
         // This event is fired when a cell is clicked, or content within a cell is clicked.
@@ -571,8 +575,6 @@ namespace BiroWisataForm
                 // Optionally, store the ID if needed elsewhere
                 // string idColName = dgvPelanggan.Columns.Contains("colIDPelanggan") ? "colIDPelanggan" : "IDPelanggan";
                 // selectedPelangganId = Convert.ToInt32(selectedRow.Cells[idColName].Value);
-
-                errorProvider1.Clear(); // Clear any previous validation errors
             }
             else
             {
@@ -598,57 +600,6 @@ namespace BiroWisataForm
         private void dgvPelanggan_CellContentClick_1(object sender, DataGridViewCellEventArgs e)
         {
 
-        }
-
-        /// <summary>
-        /// Mengecek apakah ada perubahan data antara form input dengan data di grid
-        /// </summary>
-        /// <returns>True jika ada perubahan, False jika tidak ada perubahan</returns>
-        private bool HasDataChanged()
-        {
-            if (dgvPelanggan.SelectedRows.Count == 0) return false;
-
-            try
-            {
-                DataGridViewRow selectedRow = dgvPelanggan.SelectedRows[0];
-
-                // Ambil data dari grid (data asli) - gunakan fallback untuk kolom
-                string gridNama = "";
-                string gridAlamat = "";
-                string gridNoTelp = "";
-                string gridEmail = "";
-
-                // Cek nama kolom yang ada (designer vs auto-generated)
-                string namaColName = dgvPelanggan.Columns.Contains("colNamaPelanggan") ? "colNamaPelanggan" : "NamaPelanggan";
-                string alamatColName = dgvPelanggan.Columns.Contains("colAlamat") ? "colAlamat" : "Alamat";
-                string noTelpColName = dgvPelanggan.Columns.Contains("colNoTelp") ? "colNoTelp" : "NoTelp";
-                string emailColName = dgvPelanggan.Columns.Contains("colEmail") ? "colEmail" : "Email";
-
-                gridNama = selectedRow.Cells[namaColName].Value?.ToString() ?? "";
-                gridAlamat = selectedRow.Cells[alamatColName].Value?.ToString() ?? "";
-                gridNoTelp = selectedRow.Cells[noTelpColName].Value?.ToString() ?? "";
-                gridEmail = selectedRow.Cells[emailColName].Value?.ToString() ?? "";
-
-                // Ambil data dari form input (data yang akan disimpan)
-                string formNama = txtNama.Text.Trim();
-                string formAlamat = txtAlamat.Text.Trim();
-                string formNoTelp = txtNoTelp.Text.Trim();
-                string formEmail = txtEmail.Text.Trim();
-
-                // Bandingkan setiap field
-                bool namaChanged = gridNama != formNama;
-                bool alamatChanged = gridAlamat != formAlamat;
-                bool noTelpChanged = gridNoTelp != formNoTelp;
-                bool emailChanged = gridEmail != formEmail;
-
-                // Return true jika ada minimal 1 field yang berubah
-                return namaChanged || alamatChanged || noTelpChanged || emailChanged;
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Error saat mengecek perubahan data: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                return true; // Jika error, anggap ada perubahan untuk safety
-            }
         }
     }
 }

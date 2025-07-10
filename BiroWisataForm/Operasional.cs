@@ -171,8 +171,8 @@ namespace BiroWisataForm
         private void Operasional_Load(object sender, EventArgs e)
         {
             RefreshData();
-            ClearInputs();
             // Event handlers are now managed by the Designer.cs, no need for manual WireUp
+            ClearInputs();
         }
 
         private void InitializeDataGridView()
@@ -392,15 +392,6 @@ namespace BiroWisataForm
             if (selectedOperasionalId < 0) { MessageBox.Show("Pilih data yang akan diubah.", "Peringatan", MessageBoxButtons.OK, MessageBoxIcon.Warning); return; }
             if (!ValidateInputs(out decimal biaya)) return;
 
-            // *** TAMBAHAN BARU: Cek apakah ada perubahan data ***
-            if (!HasDataChanged())
-            {
-                MessageBox.Show("Tidak ada perubahan data untuk disimpan.", "Informasi",
-                                MessageBoxButtons.OK, MessageBoxIcon.Information);
-                return;
-            }
-            // *** AKHIR TAMBAHAN ***
-
             int idPaket = Convert.ToInt32(cmbPaket.SelectedValue);
             int idDriver = Convert.ToInt32(cmbDriver.SelectedValue);
             int idKendaraan = Convert.ToInt32(cmbKendaraan.SelectedValue);
@@ -417,8 +408,6 @@ namespace BiroWisataForm
                 MessageBox.Show("Kombinasi Paket, Driver, Kendaraan, dan Jenis Pengeluaran ini sudah digunakan oleh data lain.", "Data Duplikat", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
-
-            // ... sisa kode tetap sama ...
 
             // --- PERUBAHAN DIMULAI DI SINI ---
             using (var conn = new SqlConnection(kn.connectionString()))
@@ -508,67 +497,70 @@ namespace BiroWisataForm
         private bool ValidateInputs(out decimal biaya)
         {
             biaya = 0;
-            string errorMsg = "";
-            bool isValid = true;
-            if (cmbPaket.SelectedValue == null || cmbPaket.SelectedValue == DBNull.Value)
-            { errorMsg += "- Paket Wisata harus dipilih.\n"; isValid = false; }
-            if (cmbDriver.SelectedValue == null || cmbDriver.SelectedValue == DBNull.Value)
-            { errorMsg += "- Driver harus dipilih.\n"; isValid = false; }
-            if (cmbKendaraan.SelectedValue == null || cmbKendaraan.SelectedValue == DBNull.Value)
-            { errorMsg += "- Kendaraan harus dipilih.\n"; isValid = false; }
-            if (cmbJenisPengeluaran.SelectedIndex <= 0)
-            { errorMsg += "- Jenis Pengeluaran harus dipilih.\n"; isValid = false; }
-            if (string.IsNullOrWhiteSpace(txtBiaya.Text))
-            { errorMsg += "- Biaya tidak boleh kosong.\n"; isValid = false; }
-            else if (!decimal.TryParse(txtBiaya.Text.Trim(), NumberStyles.Any, CultureInfo.InvariantCulture, out biaya) || biaya <= 0)
-            { errorMsg += "- Biaya harus berupa angka positif.\n"; isValid = false; }
 
-            if (!isValid) { MessageBox.Show("Harap perbaiki input yang tidak valid:\n" + errorMsg, "Validasi Gagal", MessageBoxButtons.OK, MessageBoxIcon.Warning); }
+            bool isValid = true;
+            string errorMsg = "";
+
+            // Validasi Pilihan ComboBox
+            if (cmbPaket.SelectedValue == null || cmbPaket.SelectedValue == DBNull.Value)
+            {
+                errorMsg += "- Paket Wisata harus dipilih.\n";
+                isValid = false;
+            }
+
+            if (cmbDriver.SelectedValue == null || cmbDriver.SelectedValue == DBNull.Value)
+            {
+                errorMsg += "- Driver harus dipilih.\n";
+                isValid = false;
+            }
+
+            if (cmbKendaraan.SelectedValue == null || cmbKendaraan.SelectedValue == DBNull.Value)
+            {
+                errorMsg += "- Kendaraan harus dipilih.\n";
+                isValid = false;
+            }
+
+            if (cmbJenisPengeluaran.SelectedIndex <= 0)
+            {
+                errorMsg += "- Jenis Pengeluaran harus dipilih.\n";
+                isValid = false;
+            }
+
+            // Validasi Input Biaya
+            if (string.IsNullOrWhiteSpace(txtBiaya.Text))
+            {
+                errorMsg += "- Biaya tidak boleh kosong.\n";
+                isValid = false;
+            }
+            else if (!decimal.TryParse(txtBiaya.Text.Trim(), NumberStyles.Any, CultureInfo.InvariantCulture, out biaya) || biaya <= 0)
+            {
+                errorMsg += "- Biaya harus berupa angka positif.\n";
+                isValid = false;
+            }
+            else
+            {
+                // Validasi panjang desimal (10, 2)
+                string biayaText = txtBiaya.Text.Trim();
+                int decimalPointIndex = biayaText.IndexOf('.');
+                int integerPartLength = (decimalPointIndex == -1) ? biayaText.Length : decimalPointIndex;
+                int scalePartLength = (decimalPointIndex == -1) ? 0 : biayaText.Length - decimalPointIndex - 1;
+
+                if (integerPartLength > 8 || scalePartLength > 2)
+                {
+                    errorMsg += "- Format biaya tidak sesuai (maksimal 8 digit sebelum koma dan 2 setelahnya).\n";
+                    isValid = false;
+                }
+            }
+
+            // Jika ada error, tampilkan semua pesan yang terkumpul
+            if (!isValid)
+            {
+                MessageBox.Show("Harap perbaiki input yang tidak valid:\n\n" + errorMsg, "Validasi Gagal", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            }
+
             return isValid;
         }
 
-        /// <summary>
-        /// Mengecek apakah ada perubahan data antara form input dengan data di grid
-        /// </summary>
-        /// <returns>True jika ada perubahan, False jika tidak ada perubahan</returns>
-        private bool HasDataChanged()
-        {
-            if (dgvOperasional.SelectedRows.Count == 0) return false;
-
-            try
-            {
-                DataGridViewRow selectedRow = dgvOperasional.SelectedRows[0];
-
-                // Ambil data dari grid (data asli)
-                var gridIdPaket = selectedRow.Cells["colIDPaket"].Value?.ToString();
-                var gridIdDriver = selectedRow.Cells["colIDDriver"].Value?.ToString();
-                var gridIdKendaraan = selectedRow.Cells["colIDKendaraan"].Value?.ToString();
-                var gridJenisPengeluaran = selectedRow.Cells["colJenisPengeluaran"].Value?.ToString();
-                var gridBiaya = selectedRow.Cells["colBiayaOperasional"].Value?.ToString();
-
-                // Ambil data dari form input (data yang akan disimpan)
-                var formIdPaket = cmbPaket.SelectedValue?.ToString();
-                var formIdDriver = cmbDriver.SelectedValue?.ToString();
-                var formIdKendaraan = cmbKendaraan.SelectedValue?.ToString();
-                var formJenisPengeluaran = cmbJenisPengeluaran.SelectedItem?.ToString();
-                var formBiaya = txtBiaya.Text.Trim();
-
-                // Bandingkan setiap field
-                bool paketChanged = gridIdPaket != formIdPaket;
-                bool driverChanged = gridIdDriver != formIdDriver;
-                bool kendaraanChanged = gridIdKendaraan != formIdKendaraan;
-                bool jenisChanged = gridJenisPengeluaran != formJenisPengeluaran;
-                bool biayaChanged = gridBiaya != formBiaya;
-
-                // Return true jika ada minimal 1 field yang berubah
-                return paketChanged || driverChanged || kendaraanChanged || jenisChanged || biayaChanged;
-            }
-            catch (Exception ex)
-            {
-                HandleGeneralError("mengecek perubahan data", ex);
-                return true; // Jika error, anggap ada perubahan untuk safety
-            }
-        }
 
         private void ClearInputs()
         {
