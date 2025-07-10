@@ -520,7 +520,6 @@ namespace BiroWisataForm
 
         }
         #endregion
-        private System.Windows.Forms.DataGridViewTextBoxColumn colTanggalPembayaran;
         private System.Windows.Forms.DataGridViewTextBoxColumn colIDPembayaran;
         private System.Windows.Forms.DataGridViewTextBoxColumn colIDPemesanan;
         private System.Windows.Forms.DataGridViewTextBoxColumn colNamaPelanggan;

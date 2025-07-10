@@ -460,7 +460,7 @@ namespace BiroWisataForm
                                         WHERE IDPaket = @IDPaket 
                                         AND StatusPemesanan IN ('Menunggu', 'Dikonfirmasi');";
 
-                int pemesananDibatalkan = 0;
+                //int pemesananDibatalkan = 0;
                 using (SqlCommand cancelPemesananCmd = new SqlCommand(cancelPemesananQuery, conn, transaction))
                 {
                     cancelPemesananCmd.Parameters.AddWithValue("@IDPaket", selectedPaketId);

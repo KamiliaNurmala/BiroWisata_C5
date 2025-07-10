@@ -411,8 +411,8 @@ namespace BiroWisataForm
 
 
         // Need to declare these if not already done (they should be for designer variables)
-        private System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle1;
-        private System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle2;
+        //private System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle1;
+        //private System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle2;
         private DataGridViewTextBoxColumn colIDPelanggan;
         private DataGridViewTextBoxColumn colNamaPelanggan;
         private DataGridViewTextBoxColumn colAlamat;

@@ -469,7 +469,7 @@ namespace BiroWisataForm
             }
             else if (!System.Text.RegularExpressions.Regex.IsMatch(txtNoTel.Text.Trim(), @"^08[0-9]{8,11}$"))
             {
-                errorMsg += "- Nomor telepon harus dimulai dengan '08' dan berisi 10-13 digit.\n";
+                errorMsg += "- Nomor telepon wajib angka, dan harus dimulai dengan '08' dan berisi 10-13 digit.\n";
                 isValid = false;
             }
 
@@ -481,7 +481,7 @@ namespace BiroWisataForm
             }
             else if (!System.Text.RegularExpressions.Regex.IsMatch(txtNoSim.Text.Trim(), @"^[0-9]{12,14}$"))
             {
-                errorMsg += "- Nomor SIM harus 12 atau 14 digit angka.\n";
+                errorMsg += "- Nomor SIM wajib angka, dan harus 12-14 digit angka.\n";
                 isValid = false;
             }
 
@@ -493,6 +493,7 @@ namespace BiroWisataForm
 
             return isValid;
         }
+
 
         //private void ShowError(string message, Control control)
         //{

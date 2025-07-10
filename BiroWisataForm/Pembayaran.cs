@@ -6,6 +6,7 @@ using System.Windows.Forms;
 using System.Globalization;
 using System.Linq;
 using praktikum7;
+using System.Threading.Tasks;
 
 namespace BiroWisataForm
 {
@@ -761,8 +762,8 @@ namespace BiroWisataForm
 
             try
             {
-                // Test operasi refresh normal
-                RefreshData(null, null, null, null);
+                // Await the RefreshData method if it's asynchronous
+                await Task.Run(() => RefreshData(null, null, null, null));
 
                 sw.Stop();
                 double seconds = sw.Elapsed.TotalSeconds;
@@ -791,10 +792,12 @@ namespace BiroWisataForm
 
             try
             {
-                // Test operasi filter normal
+                // Declare the missing variables
                 DateTime start = new DateTime(2024, 1, 1);
                 DateTime end = DateTime.Now;
-                RefreshData("Transfer", start, end, start, end);
+
+                // Await the RefreshData method if it's asynchronous
+                await Task.Run(() => RefreshData("Transfer", start, end, start, end));
 
                 sw.Stop();
                 double seconds = sw.Elapsed.TotalSeconds;
@@ -829,20 +832,20 @@ namespace BiroWisataForm
                 conn.Open();
                 transaction = conn.BeginTransaction();
 
-                // Test insert 10 dummy records (akan di-rollback)
+                // Test insert 10 dummy records (will be rolled back)
                 for (int i = 1; i <= 10; i++)
                 {
                     string query = @"INSERT INTO Pembayaran (IDPemesanan, JumlahPembayaran, TanggalPembayaran, MetodePembayaran)
-                                   SELECT TOP 1 IDPemesanan, 50000, GETDATE(), 'Transfer' 
-                                   FROM Pemesanan WHERE StatusPembayaran = 'Belum Bayar'";
+                           SELECT TOP 1 IDPemesanan, 50000, GETDATE(), 'Transfer' 
+                           FROM Pemesanan WHERE StatusPembayaran = 'Belum Bayar'";
 
                     using (SqlCommand cmd = new SqlCommand(query, conn, transaction))
                     {
-                        cmd.ExecuteNonQuery();
+                        await cmd.ExecuteNonQueryAsync(); // Use await here
                     }
                 }
 
-                // ROLLBACK - data tidak benar-benar disimpan
+                // ROLLBACK - data is not actually saved
                 transaction.Rollback();
 
                 sw.Stop();

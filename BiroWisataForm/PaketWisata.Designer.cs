@@ -40,7 +40,7 @@ namespace BiroWisataForm
         private System.Windows.Forms.Label lblSearch;
         private System.Windows.Forms.TextBox txtSearch;
         private System.Windows.Forms.ErrorProvider errorProvider1;
-        private System.Windows.Forms.DataGridViewTextBoxColumn colNamaDriver; // Use this consistent name
+        //private System.Windows.Forms.DataGridViewTextBoxColumn colNamaDriver; // Use this consistent name
 
 
         /// <summary>
@@ -618,7 +618,7 @@ namespace BiroWisataForm
             this.PerformLayout();
 
         }
-        private DataGridViewTextBoxColumn IDKendaraan;
+        //private DataGridViewTextBoxColumn IDKendaraan;
         private DataGridViewTextBoxColumn colIDPaket;
         private DataGridViewTextBoxColumn colNamaPaket;
         private DataGridViewTextBoxColumn colKendaraanInfo;

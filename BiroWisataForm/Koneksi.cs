@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Net;
+using System.Net.NetworkInformation;
 using System.Net.Sockets;
+using System.Windows.Forms;
 
 namespace praktikum7
 {
@@ -34,5 +36,20 @@ namespace praktikum7
             }
             throw new Exception("Tidak ada alamat IP yang ditemukan.");
         }
+
+        public bool CheckConnection()
+        {
+            if (!NetworkInterface.GetIsNetworkAvailable())
+            {
+                MessageBox.Show(
+                    "Koneksi internet terputus. Silakan periksa jaringan Anda sebelum melanjutkan.",
+                    "Tidak Ada Koneksi",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Error);
+                return false; // Koneksi gagal
+            }
+            return true; // Koneksi berhasil
+        }
+
     }
 }

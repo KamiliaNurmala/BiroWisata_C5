@@ -247,7 +247,7 @@ namespace BiroWisataForm
             }
             else if (txtPlatNomor.Text.Trim().Length < 5 || txtPlatNomor.Text.Trim().Length > 12)
             {
-                errorMsg += "- Plat nomor harus antara 5 dan 12 karakter.\n";
+                errorMsg += "- Plat nomor hanya berisi angka dan huruf, dan harus antara 5 dan 12 karakter.\n";
                 isValid = false;
             }
             else if (!System.Text.RegularExpressions.Regex.IsMatch(txtPlatNomor.Text, @"^[a-zA-Z0-9\s]+$"))

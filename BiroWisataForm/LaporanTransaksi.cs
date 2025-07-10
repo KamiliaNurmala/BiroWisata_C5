@@ -6,6 +6,7 @@ using System.ComponentModel;
 using System.Data;
 using System.Data.SqlClient;
 using System.Drawing;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -70,7 +71,7 @@ namespace BiroWisataForm
             DataTable dt = new DataTable();
 
             // Use SqlDataAdapter to fill the DataTable with data from the database
-            using (SqlConnection conn = new SqlConnection(connectionString))
+            using (SqlConnection conn = new SqlConnection(kn.connectionString()))
             {
                 SqlDataAdapter da = new SqlDataAdapter(query, conn);
                 da.Fill(dt);
@@ -84,7 +85,10 @@ namespace BiroWisataForm
             reportViewer1.LocalReport.DataSources.Add(rds);
 
             // Set the path to the report (.rdlc file)
-            reportViewer1.LocalReport.ReportPath = @"D:\Kuliah\semester4\Pengembangan Aplikasi Basis Data\IniKelompok\BiroWisataForm-Final_Perbaikan\BiroWisataForm-Final2\BiroWisataForm-Final\BiroWisataForm\BiroWisataForm\Report1.rdlc";
+            //reportViewer1.LocalReport.ReportPath = @"D:\Kuliah\semester4\Pengembangan Aplikasi Basis Data\IniKelompok\BiroWisataForm-Final_Perbaikan\BiroWisataForm-Final2\BiroWisataForm-Final\BiroWisataForm\BiroWisataForm\Report1.rdlc";
+
+            string path = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Report1.rdlc");
+            reportViewer1.LocalReport.ReportPath = path;
 
             // Refresh the ReportViewer to show the updated report
             reportViewer1.RefreshReport();
@@ -93,6 +97,10 @@ namespace BiroWisataForm
         // THIS IS THE CORRECT PLACEMENT FOR reportViewer1_Load
         private void reportViewer1_Load(object sender, EventArgs e)
         {
+            if (!kn.CheckConnection())
+            {
+                return; // Hentikan jika koneksi bermasalah
+            }
             // This method is called when the ReportViewer control loads.
             // You typically don't need to put much code here if SetupReportViewer() is called in Form_Load.
             // It can be left empty or used for specific ReportViewer initialization not handled elsewhere.
@@ -102,6 +110,10 @@ namespace BiroWisataForm
 
         private void btnKembali_Click(object sender, EventArgs e)
         {
+            if (!kn.CheckConnection())
+            {
+                return; // Hentikan jika koneksi bermasalah
+            }
             // Perintah ini akan menutup form 'Kendaraan' saat ini,
             // dan mengembalikan kontrol ke form yang membukanya (yaitu MenuAdmin).
             this.Close();
